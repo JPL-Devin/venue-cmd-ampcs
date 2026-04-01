@@ -31,7 +31,7 @@ def generate_exec_token():
                          exec_venue_private_pem,
                          algorithm='RS256')
 
-    token_str = encoded_token.decode('utf-8')
+    token_str = encoded_token if isinstance(encoded_token, str) else encoded_token.decode('utf-8')
     auth_header = 'Bearer {0}'.format(token_str)
     exec_headers['Authorization'] = auth_header
     exec_shared_dict['headers'] = exec_headers  
