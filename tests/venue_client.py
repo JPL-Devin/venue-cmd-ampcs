@@ -47,15 +47,11 @@ if hostname.startswith('eurc'):
     CMD_NO_OP = 'CMD_NO_OP'
     CMD_COMP_EVR = 'CMD_SVC_EVR_CMD_COMPLETED_SUCCESS'
     CMD_COUNTER_EHA = 'CMD-0027'
-    CMD_DOWN_DP = 'DDM_MANAGE_DWN_PB,DATA_PRODUCTS,ENABLE'
-    DP_AP_ID = 37 # DP_EVR_REC_ACT_LOW
 
 elif hostname.startswith('psyche'):
     CMD_NO_OP = 'CMD_NO_OP'
     CMD_COMP_EVR = 'CMD_SVC_EVR_CMD_COMPLETED_SUCCESS'
     CMD_COUNTER_EHA = 'CMD-0002'
-    CMD_DOWN_DP = 'DWN_MANAGE_PB,DATA_PRODUCTS,ENABLE'
-    DP_AP_ID = 107 # DP_EHA_RECORDED
 else:
     print(f'Error: Unrecognized hostname: {hostname}')
     sys.exit(1)
@@ -115,62 +111,11 @@ def query_rt_evr(server, sessionId, evrName, startTime=None, endTime=None, timeo
     )
     return res
 
-def query_chill_evr(server, sessionId, evrName, startTime=None, endTime=None, timeout=240):
-    url = f'{server}/evr/chill'
-    payload = {
-        'sessionId': sessionId,
-        'evrName': evrName,
-        'startTime': startTime,
-        'endTime': endTime,
-        'timeout': timeout
-    }
-
-    res = requests.get(url, 
-        json=payload,
-        headers=exec_shared_dict['headers']
-    )
-    return res
-
 def query_rt_eha(server, sessionId, channelId, startTime=None, endTime=None, timeout=240):
     url = f'{server}/eha/realtime'
     payload = {
         'sessionId': sessionId,
         'channelId': channelId,
-        'startTime': startTime,
-        'endTime': endTime,
-        'timeout': timeout
-    }
-
-    res = requests.get(url, 
-        json=payload,
-        headers=exec_shared_dict['headers']
-    )
-    return res
-
-def query_chill_eha(server, sessionId, channelId, timeType='ERT', startTime=None, endTime=None, timeout=240):
-    url = f'{server}/eha/chill'
-    payload = {
-        'sessionId': sessionId,
-        'channelIds': [channelId],
-        'timeType': timeType,
-        'startTime': startTime,
-        'endTime': endTime,
-        'timeout': timeout
-    }
-
-    res = requests.get(url, 
-        json=payload,
-        headers=exec_shared_dict['headers']
-    )
-    return res
-
-def query_dp(server, sessionId, dpStatus='ALL', apIds=[], timeType='ERT', startTime=None, endTime=None, timeout=240):
-    url = f'{server}/dp'
-    payload = {
-        'sessionId': sessionId,
-        'dpStatus': dpStatus,
-        'apIds': apIds,
-        'timeType': timeType,
         'startTime': startTime,
         'endTime': endTime,
         'timeout': timeout
@@ -206,34 +151,6 @@ def send_scmf_file(server, sessionId, filePath, disableChecks=False, timeout=10)
             'disableChecks': disableChecks,
             'timeout': 60
         },
-        headers=exec_shared_dict['headers']
-    )
-    return res
-
-def run_custom_script(server, startInput):
-    url = f'{server}/custom_script/start'
-    res = requests.post(url, json=startInput,
-        headers=exec_shared_dict['headers']
-    )
-    return res
-
-def get_custom_script_status(server, statusInput):
-    url = f'{server}/custom_script/status'
-    res = requests.get(url, json=statusInput, 
-        headers=exec_shared_dict['headers']
-    )
-    return res
-
-def download_custom_script_files(server, scriptRunId):
-    url = f'{server}/custom_script/{scriptRunId}/files'
-    res = requests.get(url, 
-        headers=exec_shared_dict['headers']
-    )
-    return res
-
-def halt_custom_script(server, haltInput):
-    url = f'{server}/custom_script/halt'
-    res = requests.post(url, json=haltInput,
         headers=exec_shared_dict['headers']
     )
     return res
