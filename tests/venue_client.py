@@ -45,13 +45,9 @@ generate_exec_token()
 hostname = socket.gethostname()
 if hostname.startswith('eurc'):
     CMD_NO_OP = 'CMD_NO_OP'
-    CMD_COMP_EVR = 'CMD_SVC_EVR_CMD_COMPLETED_SUCCESS'
-    CMD_COUNTER_EHA = 'CMD-0027'
 
 elif hostname.startswith('psyche'):
     CMD_NO_OP = 'CMD_NO_OP'
-    CMD_COMP_EVR = 'CMD_SVC_EVR_CMD_COMPLETED_SUCCESS'
-    CMD_COUNTER_EHA = 'CMD-0002'
 else:
     print(f'Error: Unrecognized hostname: {hostname}')
     sys.exit(1)
@@ -91,38 +87,6 @@ def send_sse_cmd(server, sessionId, commandString, timeout=10):
             'commandString': commandString,
             'timeout': timeout
         },
-        headers=exec_shared_dict['headers']
-    )
-    return res
-
-def query_rt_evr(server, sessionId, evrName, startTime=None, endTime=None, timeout=240):
-    url = f'{server}/evr/realtime'
-    payload = {
-        'sessionId': sessionId,
-        'evrName': evrName,
-        'startTime': startTime,
-        'endTime': endTime,
-        'timeout': timeout
-    }
-
-    res = requests.get(url, 
-        json=payload,
-        headers=exec_shared_dict['headers']
-    )
-    return res
-
-def query_rt_eha(server, sessionId, channelId, startTime=None, endTime=None, timeout=240):
-    url = f'{server}/eha/realtime'
-    payload = {
-        'sessionId': sessionId,
-        'channelId': channelId,
-        'startTime': startTime,
-        'endTime': endTime,
-        'timeout': timeout
-    }
-
-    res = requests.get(url, 
-        json=payload,
         headers=exec_shared_dict['headers']
     )
     return res

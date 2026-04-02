@@ -1,618 +1,97 @@
-components:
-  schemas:
-    BinaryFileBodyModel:
-      properties:
-        fileType:
-          description: The file type that should be used to build the binary file
-            into a SCMF
-          title: Filetype
-          type: integer
-        overwrite:
-          default: true
-          description: if True will overwrite any existing onboard file
-          title: Overwrite
-          type: boolean
-        sessionId:
-          description: The AMPCS session to send the command through
-          title: Sessionid
-          type: integer
-        sourceFilePath:
-          description: 'The full path on GDS host (ex: /proj/europa/sit/current/files/myfile.data)'
-          title: Sourcefilepath
-          type: string
-        stringSelection:
-          allOf:
-          - $ref: '#/components/schemas/StringSelection'
-          default: DEFAULT
-          description: Specifies the MTAK string to send the command
-        targetFilePath:
-          description: The full onboard path (i.e. /eng1/myfile.data
-          title: Targetfilepath
-          type: string
-        timeout:
-          default: 10
-          description: The timeout on the dispatch process in seconds
-          minimum: 0.0
-          title: Timeout
-          type: integer
-      required:
-      - sessionId
-      - sourceFilePath
-      - targetFilePath
-      - fileType
-      title: BinaryFileBodyModel
-      type: object
-    ChannelValueObjectRespModel:
-      properties:
-        channelId:
-          default: ''
-          description: The Id of the EHA channel
-          title: Channelid
-          type: string
-        channelName:
-          default: ''
-          description: The name of the EHA channel
-          title: Channelname
-          type: string
-        channelStatus:
-          default: ''
-          description: The string status of the channel if it is a table-driven channel
-            (only for boolean and status type channels)
-          title: Channelstatus
-          type: string
-        channelType:
-          default: ''
-          description: The type of the EHA channel
-          title: Channeltype
-          type: string
-        dn:
-          default: ''
-          description: Data number value. Only returns string for now
-          title: Dn
-          type: string
-        dnAlarmState:
-          default: ''
-          description: Indicates if the channel measurement is in alarm (on DN values)
-          title: Dnalarmstate
-          type: string
-        ert:
-          default: ''
-          description: Earth received (ISO-formatted) time when this value was received
-          title: Ert
-          type: string
-        eu:
-          default: 0.0
-          description: Engineering unit value
-          title: Eu
-          type: number
-        euAlarmState:
-          default: ''
-          description: Indicates if the channel measurement is in alarm (on EU values)
-          title: Eualarmstate
-          type: string
-        isRecorded:
-          default: false
-          description: True if this is a recorded EHA, false otherwise
-          title: Isrecorded
-          type: boolean
-        scet:
-          default: ''
-          description: Correlated SCLK time in ISO format
-          title: Scet
-          type: string
-        sclk:
-          default: ''
-          description: SCLK when this value was read
-          title: Sclk
-          type: string
-        sessionId:
-          default: 0
-          description: The AMPCS session ID that the result came from
-          title: Sessionid
-          type: integer
-        vcId:
-          default: 0
-          description: The virtual channel ID that the result came from
-          title: Vcid
-          type: integer
-      title: ChannelValueObjectRespModel
-      type: object
-    CmdDispatchedResp:
-      properties:
-        cmdRequested:
-          default: ''
-          description: This mirrors what was received as the requested command string
-          title: Cmdrequested
-          type: string
-        dispatchTime:
-          default: ''
-          description: 'Time that the dispatch occurred. Example: 2017-09-25T03:57:42.676Z'
-          title: Dispatchtime
-          type: string
-      title: CmdDispatchedResp
-      type: object
-    DefaultCmdString:
-      description: An enumeration.
-      enum:
-      - A
-      - B
-      - AB
-      title: DefaultCmdString
-      type: string
-    EVRObjectResp:
-      properties:
-        ert:
-          default: ''
-          description: Earth received (ISO-formatted) time
-          title: Ert
-          type: string
-        eventId:
-          default: 0
-          description: EVR event ID
-          title: Eventid
-          type: integer
-        evrLevel:
-          default: ''
-          description: Level of EVR
-          title: Evrlevel
-          type: string
-        evrMessage:
-          default: ''
-          description: Message that this EVR contains
-          title: Evrmessage
-          type: string
-        evrModule:
-          default: ''
-          description: FSW module that generated this EVR
-          title: Evrmodule
-          type: string
-        evrName:
-          default: ''
-          description: Name of the EVR
-          title: Evrname
-          type: string
-        fromSSE:
-          default: false
-          description: True if EVR is frome SSE, false otherwise
-          title: Fromsse
-          type: boolean
-        isRecorded:
-          default: false
-          description: True if this is a recorded EVR (from data products)
-          title: Isrecorded
-          type: boolean
-        scet:
-          default: ''
-          description: ISO-formatted spacecraft event time
-          title: Scet
-          type: string
-        sclk:
-          default: ''
-          description: SCLK for this EVR
-          title: Sclk
-          type: string
-        sessionId:
-          default: 0
-          description: The AMPCS session ID
-          title: Sessionid
-          type: integer
-        vcId:
-          default: 0
-          description: The virtual channel ID
-          title: Vcid
-          type: integer
-      title: EVRObjectResp
-      type: object
-    EhaRtBodyModel:
-      properties:
-        channelId:
-          description: The channel ID to search for
-          title: Channelid
-          type: string
-        endTime:
-          description: Query end time in ERT DOY UTC (2009-202T12:35:00)
-          title: Endtime
-          type: string
-        sessionId:
-          description: The AMPCS session to query against
-          title: Sessionid
-          type: integer
-        startTime:
-          description: Query start time in ERT DOY UTC (2009-202T12:35:00)
-          title: Starttime
-          type: string
-        timeout:
-          default: 240
-          description: How long to wait in seconds for results to return
-          minimum: 0.0
-          title: Timeout
-          type: integer
-      required:
-      - startTime
-      - endTime
-      title: EhaRtBodyModel
-      type: object
-    EhaRtMultiBodyModel:
-      properties:
-        channelIds:
-          description: The channel IDs to search for
-          items:
-            type: string
-          title: Channelids
-          type: array
-        endTime:
-          description: Query end time in ERT DOY UTC (2009-202T12:35:00)
-          title: Endtime
-          type: string
-        sessionId:
-          description: The AMPCS session to query against
-          title: Sessionid
-          type: integer
-        startTime:
-          description: Query start time in ERT DOY UTC (2009-202T12:35:00)
-          title: Starttime
-          type: string
-        timeout:
-          default: 240
-          description: How long to wait in seconds for results to return
-          minimum: 0.0
-          title: Timeout
-          type: integer
-      required:
-      - channelIds
-      - startTime
-      - endTime
-      title: EhaRtMultiBodyModel
-      type: object
-    ErrorResponse:
-      properties:
-        message:
-          default: ''
-          description: Error message
-          title: Message
-          type: string
-      title: ErrorResponse
-      type: object
-    EvrRtBodyModel:
-      properties:
-        endTime:
-          description: Query end time in ERT DOY UTC (2009-202T12:35:00)
-          title: Endtime
-          type: string
-        eventId:
-          description: EVR event ID
-          title: Eventid
-          type: integer
-        evrLevel:
-          description: Filter by EVR level. Wildcard * can be used. Note that EVR
-            levels are project specific.
-          title: Evrlevel
-          type: string
-        evrName:
-          description: Name of EVRs to query. Wildcard * can be used.
-          title: Evrname
-          type: string
-        sessionId:
-          description: The AMPCS session to qury against
-          title: Sessionid
-          type: integer
-        startTime:
-          description: Query start time in ERT DOY UTC (2009-202T12:35:00)
-          title: Starttime
-          type: string
-        timeout:
-          default: 240
-          description: How long to wait in seconds for results to return
-          minimum: 0.0
-          title: Timeout
-          type: integer
-      required:
-      - sessionId
-      - startTime
-      - endTime
-      title: EvrRtBodyModel
-      type: object
-    EvrRtMultiBodyModel:
-      properties:
-        endTime:
-          description: Query end time in ERT DOY UTC (2009-202T12:35:00)
-          title: Endtime
-          type: string
-        eventIds:
-          default: []
-          description: Event IDs of EVRs to retreive
-          items:
-            type: integer
-          title: Eventids
-          type: array
-        evrLevels:
-          default: []
-          description: Levels of EVRs to return. Note that levels are project specific.
-          items:
-            type: string
-          title: Evrlevels
-          type: array
-        evrNames:
-          default: []
-          description: Name of EVRs to retrieve. No wildcard is supported
-          items:
-            type: string
-          title: Evrnames
-          type: array
-        sessionId:
-          description: The AMPCS session to qury against
-          title: Sessionid
-          type: integer
-        startTime:
-          description: Query start time in ERT DOY UTC (2009-202T12:35:00)
-          title: Starttime
-          type: string
-        timeout:
-          default: 240
-          description: How long to wait in seconds for results to return
-          minimum: 0.0
-          title: Timeout
-          type: integer
-      required:
-      - sessionId
-      - startTime
-      - endTime
-      title: EvrRtMultiBodyModel
-      type: object
-    FswCmdBodyModel:
-      properties:
-        commandString:
-          description: The command string including the command stem and any arguments
-          title: Commandstring
-          type: string
-        sessionId:
-          description: The AMPCS session to send the command through
-          title: Sessionid
-          type: integer
-        stringSelection:
-          allOf:
-          - $ref: '#/components/schemas/StringSelection'
-          default: DEFAULT
-          description: Which sides of flight computer the command is for
-        timeout:
-          default: 10
-          description: The timeout on the dispatch process in seconds
-          minimum: 0.0
-          title: Timeout
-          type: integer
-        validate:
-          default: true
-          description: Flag for AMPCS to validate the command against the FSW dict
-            before radiating
-          title: Validate
-          type: boolean
-      required:
-      - sessionId
-      - commandString
-      title: FswCmdBodyModel
-      type: object
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          title: Detail
-          type: array
-      title: HTTPValidationError
-      type: object
-    HealthStatus:
-      properties:
-        message:
-          description: status message
-          title: Message
-          type: string
-        status:
-          allOf:
-          - $ref: '#/components/schemas/HealthStatusEnum'
-          description: health status
-      required:
-      - status
-      - message
-      title: HealthStatus
-      type: object
-    HealthStatusEnum:
-      description: An enumeration.
-      enum:
-      - OK
-      - ERROR
-      - UNKNOWN
-      title: HealthStatusEnum
-      type: string
-    HwCmdBodyModel:
-      properties:
-        commandStem:
-          description: The command stem of the HW Command
-          title: Commandstem
-          type: string
-        sessionId:
-          description: The AMPCS session to send this file through
-          title: Sessionid
-          type: integer
-        stringSelection:
-          allOf:
-          - $ref: '#/components/schemas/StringSelection'
-          default: DEFAULT
-          description: Specifies the MTAK string to send the command
-        timeout:
-          default: 10
-          description: The timeout on the dispatch process in seconds
-          minimum: 0.0
-          title: Timeout
-          type: integer
-      required:
-      - sessionId
-      - commandStem
-      title: HwCmdBodyModel
-      type: object
-    MtakStartBodyModel:
-      properties:
-        defaultCmdString:
-          allOf:
-          - $ref: '#/components/schemas/DefaultCmdString'
-          default: AB
-          description: Which sides of flight computer the command is for. This will
-            be used if default is used for stringSelection.
-        sessionIds:
-          description: AMPCS session ids to start MTAK on
-          items:
-            type: integer
-          title: Sessionids
-          type: array
-        timeout:
-          default: 30
-          description: How long to wait until timeout in seconds. The minimum is 25
-            seconds since MTAK takes some time to start
-          minimum: 25.0
-          title: Timeout
-          type: integer
-      required:
-      - sessionIds
-      title: MtakStartBodyModel
-      type: object
-    MtakStartResponse:
-      properties:
-        sessionIds:
-          description: AMPCS session ids
-          items:
-            type: integer
-          title: Sessionids
-          type: array
-        startTime:
-          description: Time that MTAK started
-          title: Starttime
-          type: string
-      required:
-      - sessionIds
-      - startTime
-      title: MtakStartResponse
-      type: object
-    ScmfFileBodyModel:
-      properties:
-        disableChecks:
-          default: false
-          description: Disables the check done by AMPCS for invalid scmf file
-          title: Disablechecks
-          type: boolean
-        filePath:
-          description: 'The full path on GDS host (ex: /proj/europa/sit/current/files/myfile.scmf)'
-          title: Filepath
-          type: string
-        sessionId:
-          description: The AMPCS session to send the command through
-          title: Sessionid
-          type: integer
-        timeout:
-          default: 10
-          description: The timeout on the dispatch process in seconds
-          minimum: 0.0
-          title: Timeout
-          type: integer
-      required:
-      - sessionId
-      - filePath
-      title: ScmfFileBodyModel
-      type: object
-    SseCmdBodyModel:
-      properties:
-        commandString:
-          description: The command string including the command stem and any arguments
-          title: Commandstring
-          type: string
-        sessionId:
-          description: The AMPCS session to send the command through
-          title: Sessionid
-          type: integer
-        timeout:
-          default: 10
-          description: The timeout on the dispatch process in seconds
-          minimum: 0.0
-          title: Timeout
-          type: integer
-      required:
-      - sessionId
-      - commandString
-      title: SseCmdBodyModel
-      type: object
-    StringSelection:
-      description: An enumeration.
-      enum:
-      - DEFAULT
-      - A
-      - B
-      - AB
-      title: StringSelection
-      type: string
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          title: Location
-          type: array
-        msg:
-          title: Message
-          type: string
-        type:
-          title: Error Type
-          type: string
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-      type: object
-info:
-  description: RESTful API of Ingenium VenueServer that interfaces with test venues
-  title: Ingenium VenueServer
-  version: 14.1-TP
 openapi: 3.1.0
+info:
+  title: Ingenium VenueServer
+  description: RESTful API of Ingenium VenueServer that interfaces with test venues
+  version: 14.1-TP
 paths:
-  /api/v3/cmd/binary_file:
+  /api/v3/health:
+    get:
+      tags:
+      - HEALTH
+      summary: Check health status of VenueServer
+      operationId: health_api_v3_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/mtak/start:
     post:
-      operationId: binary_file_api_v3_cmd_binary_file_post
+      tags:
+      - MTAK
+      summary: Start MTAK on the venue GDS host for the specified AMPCS session ids
+      operationId: start_mtak_api_v3_mtak_start_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BinaryFileBodyModel'
+              $ref: '#/components/schemas/MtakStartBodyModel'
         required: true
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CmdDispatchedResp'
+                $ref: '#/components/schemas/MtakStartResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/mtak/shutdown:
+    post:
+      tags:
+      - MTAK
+      summary: Shutdown MTAK that was started by VenueServer
+      operationId: shutdown_mtak_api_v3_mtak_shutdown_post
+      responses:
+        '204':
           description: Successful Response
         '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Unauthorized
-        '403':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
           description: Forbidden
-      summary: Upload a file to flight computer via MTAK
-      tags:
-      - COMMAND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/cmd/fsw_cmd:
     post:
+      tags:
+      - COMMAND
+      summary: Send a FSW command via MTAK
       operationId: fsw_cmd_api_v3_cmd_fsw_cmd_post
       requestBody:
         content:
@@ -622,34 +101,34 @@ paths:
         required: true
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CmdDispatchedResp'
-          description: Successful Response
         '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Unauthorized
-        '403':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
           description: Forbidden
-      summary: Send a FSW command via MTAK
-      tags:
-      - COMMAND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/cmd/hw_cmd:
     post:
+      tags:
+      - COMMAND
+      summary: Send a HW command via MTAK
       operationId: hw_cmd_api_v3_cmd_hw_cmd_post
       requestBody:
         content:
@@ -659,71 +138,34 @@ paths:
         required: true
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CmdDispatchedResp'
-          description: Successful Response
         '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Forbidden
-      summary: Send a HW command via MTAK
-      tags:
-      - COMMAND
-  /api/v3/cmd/scmf:
-    post:
-      operationId: scmf_file_api_v3_cmd_scmf_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ScmfFileBodyModel'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CmdDispatchedResp'
-          description: Successful Response
-        '400':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-          description: Bad Request
-        '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Unauthorized
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Forbidden
-      summary: Upload a SCMF file to flight
-      tags:
-      - COMMAND
   /api/v3/cmd/sse:
     post:
+      tags:
+      - COMMAND
+      summary: Send a SSE command via MTAK
       description: Send a SSE (Simulation and Support Equipment) command via MTAK
       operationId: sse_cmd_api_v3_cmd_sse_post
       requestBody:
@@ -734,289 +176,391 @@ paths:
         required: true
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CmdDispatchedResp'
-          description: Successful Response
         '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Unauthorized
-        '403':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
           description: Forbidden
-      summary: Send a SSE command via MTAK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/cmd/binary_file:
+    post:
       tags:
       - COMMAND
-  /api/v3/eha/realtime:
-    get:
-      description: Queries AMPCS Global LAD and return an array of EHA channel objects
-      operationId: eha_realtime_api_v3_eha_realtime_get
+      summary: Upload a file to flight computer via MTAK
+      operationId: binary_file_api_v3_cmd_binary_file_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EhaRtBodyModel'
+              $ref: '#/components/schemas/BinaryFileBodyModel'
         required: true
       responses:
         '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                items:
-                  $ref: '#/components/schemas/ChannelValueObjectRespModel'
-                title: Response 200 Eha Realtime Api V3 Eha Realtime Get
-                type: array
-          description: Successful Response
+                $ref: '#/components/schemas/CmdDispatchedResp'
         '400':
+          description: Bad Request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-          description: Bad Request
         '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Forbidden
-      summary: Queries the real time telemetry stream for a given channel
-      tags:
-      - EHA
-  /api/v3/eha/realtime_multi:
-    get:
-      description: Queries AMPCS Global LAD and return an array of EHA channel objects
-      operationId: eha_realtime_multi_api_v3_eha_realtime_multi_get
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EhaRtMultiBodyModel'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: '#/components/schemas/ChannelValueObjectRespModel'
-                title: Response 200 Eha Realtime Multi Api V3 Eha Realtime Multi Get
-                type: array
-          description: Successful Response
-        '400':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-          description: Bad Request
-        '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Unauthorized
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Forbidden
-      summary: Queries the real time telemetry stream for a given channel. This supports
-        querying multiple channel ids, etc.
-      tags:
-      - EHA
-  /api/v3/evr/realtime:
-    get:
-      description: Queries the AMPCS Global LAD and return an array of EVR objects
-      operationId: evr_realtime_api_v3_evr_realtime_get
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EvrRtBodyModel'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: '#/components/schemas/EVRObjectResp'
-                title: Response 200 Evr Realtime Api V3 Evr Realtime Get
-                type: array
-          description: Successful Response
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Bad Request
-        '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Unauthorized
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Forbidden
-      summary: Queries the real time EVR stream for the specified EVRs
-      tags:
-      - EVR
-  /api/v3/evr/realtime_multi:
-    get:
-      description: Queries the AMPCS Global LAD and return an array of EVR objects
-      operationId: evr_realtime_multi_api_v3_evr_realtime_multi_get
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EvrRtMultiBodyModel'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: '#/components/schemas/EVRObjectResp'
-                title: Response 200 Evr Realtime Multi Api V3 Evr Realtime Multi Get
-                type: array
-          description: Successful Response
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Bad Request
-        '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Unauthorized
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Forbidden
-      summary: Queries the real time EVR stream for the specified EVRs. This supports
-        querying multiple EVR names, etc.
-      tags:
-      - EVR
-  /api/v3/health:
-    get:
-      operationId: health_api_v3_health_get
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthStatus'
-          description: Successful Response
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Bad Request
-      summary: Check health status of VenueServer
-      tags:
-      - HEALTH
-  /api/v3/mtak/shutdown:
+  /api/v3/cmd/scmf:
     post:
-      operationId: shutdown_mtak_api_v3_mtak_shutdown_post
-      responses:
-        '204':
-          description: Successful Response
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Bad Request
-        '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Unauthorized
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          description: Forbidden
-      summary: Shutdown MTAK that was started by VenueServer
       tags:
-      - MTAK
-  /api/v3/mtak/start:
-    post:
-      operationId: start_mtak_api_v3_mtak_start_post
+      - COMMAND
+      summary: Upload a SCMF file to flight
+      operationId: scmf_file_api_v3_cmd_scmf_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MtakStartBodyModel'
+              $ref: '#/components/schemas/ScmfFileBodyModel'
         required: true
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MtakStartResponse'
           description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmdDispatchedResp'
         '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
           description: Unauthorized
-        '403':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
           description: Forbidden
-      summary: Start MTAK on the venue GDS host for the specified AMPCS session ids
-      tags:
-      - MTAK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    BinaryFileBodyModel:
+      properties:
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session to send the command through
+        sourceFilePath:
+          type: string
+          title: Sourcefilepath
+          description: 'The full path on GDS host (ex: /proj/europa/sit/current/files/myfile.data)'
+        targetFilePath:
+          type: string
+          title: Targetfilepath
+          description: The full onboard path (i.e. /eng1/myfile.data
+        overwrite:
+          type: boolean
+          title: Overwrite
+          description: if True will overwrite any existing onboard file
+          default: true
+        fileType:
+          type: integer
+          title: Filetype
+          description: The file type that should be used to build the binary file
+            into a SCMF
+        stringSelection:
+          allOf:
+          - $ref: '#/components/schemas/StringSelection'
+          description: Specifies the MTAK string to send the command
+          default: DEFAULT
+        timeout:
+          type: integer
+          minimum: 0.0
+          title: Timeout
+          description: The timeout on the dispatch process in seconds
+          default: 10
+      type: object
+      required:
+      - sessionId
+      - sourceFilePath
+      - targetFilePath
+      - fileType
+      title: BinaryFileBodyModel
+    CmdDispatchedResp:
+      properties:
+        cmdRequested:
+          type: string
+          title: Cmdrequested
+          description: This mirrors what was received as the requested command string
+          default: ''
+        dispatchTime:
+          type: string
+          title: Dispatchtime
+          description: 'Time that the dispatch occurred. Example: 2017-09-25T03:57:42.676Z'
+          default: ''
+      type: object
+      title: CmdDispatchedResp
+    DefaultCmdString:
+      type: string
+      enum:
+      - A
+      - B
+      - AB
+      title: DefaultCmdString
+      description: An enumeration.
+    ErrorResponse:
+      properties:
+        message:
+          type: string
+          title: Message
+          description: Error message
+          default: ''
+      type: object
+      title: ErrorResponse
+    FswCmdBodyModel:
+      properties:
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session to send the command through
+        commandString:
+          type: string
+          title: Commandstring
+          description: The command string including the command stem and any arguments
+        validate:
+          type: boolean
+          title: Validate
+          description: Flag for AMPCS to validate the command against the FSW dict
+            before radiating
+          default: true
+        stringSelection:
+          allOf:
+          - $ref: '#/components/schemas/StringSelection'
+          description: Which sides of flight computer the command is for
+          default: DEFAULT
+        timeout:
+          type: integer
+          minimum: 0.0
+          title: Timeout
+          description: The timeout on the dispatch process in seconds
+          default: 10
+      type: object
+      required:
+      - sessionId
+      - commandString
+      title: FswCmdBodyModel
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HealthStatus:
+      properties:
+        status:
+          allOf:
+          - $ref: '#/components/schemas/HealthStatusEnum'
+          description: health status
+        message:
+          type: string
+          title: Message
+          description: status message
+      type: object
+      required:
+      - status
+      - message
+      title: HealthStatus
+    HealthStatusEnum:
+      type: string
+      enum:
+      - OK
+      - ERROR
+      - UNKNOWN
+      title: HealthStatusEnum
+      description: An enumeration.
+    HwCmdBodyModel:
+      properties:
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session to send this file through
+        commandStem:
+          type: string
+          title: Commandstem
+          description: The command stem of the HW Command
+        stringSelection:
+          allOf:
+          - $ref: '#/components/schemas/StringSelection'
+          description: Specifies the MTAK string to send the command
+          default: DEFAULT
+        timeout:
+          type: integer
+          minimum: 0.0
+          title: Timeout
+          description: The timeout on the dispatch process in seconds
+          default: 10
+      type: object
+      required:
+      - sessionId
+      - commandStem
+      title: HwCmdBodyModel
+    MtakStartBodyModel:
+      properties:
+        sessionIds:
+          items:
+            type: integer
+          type: array
+          title: Sessionids
+          description: AMPCS session ids to start MTAK on
+        timeout:
+          type: integer
+          minimum: 25.0
+          title: Timeout
+          description: How long to wait until timeout in seconds. The minimum is 25
+            seconds since MTAK takes some time to start
+          default: 30
+        defaultCmdString:
+          allOf:
+          - $ref: '#/components/schemas/DefaultCmdString'
+          description: Which sides of flight computer the command is for. This will
+            be used if default is used for stringSelection.
+          default: AB
+      type: object
+      required:
+      - sessionIds
+      title: MtakStartBodyModel
+    MtakStartResponse:
+      properties:
+        sessionIds:
+          items:
+            type: integer
+          type: array
+          title: Sessionids
+          description: AMPCS session ids
+        startTime:
+          type: string
+          title: Starttime
+          description: Time that MTAK started
+      type: object
+      required:
+      - sessionIds
+      - startTime
+      title: MtakStartResponse
+    ScmfFileBodyModel:
+      properties:
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session to send the command through
+        filePath:
+          type: string
+          title: Filepath
+          description: 'The full path on GDS host (ex: /proj/europa/sit/current/files/myfile.scmf)'
+        disableChecks:
+          type: boolean
+          title: Disablechecks
+          description: Disables the check done by AMPCS for invalid scmf file
+          default: false
+        timeout:
+          type: integer
+          minimum: 0.0
+          title: Timeout
+          description: The timeout on the dispatch process in seconds
+          default: 10
+      type: object
+      required:
+      - sessionId
+      - filePath
+      title: ScmfFileBodyModel
+    SseCmdBodyModel:
+      properties:
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session to send the command through
+        commandString:
+          type: string
+          title: Commandstring
+          description: The command string including the command stem and any arguments
+        timeout:
+          type: integer
+          minimum: 0.0
+          title: Timeout
+          description: The timeout on the dispatch process in seconds
+          default: 10
+      type: object
+      required:
+      - sessionId
+      - commandString
+      title: SseCmdBodyModel
+    StringSelection:
+      type: string
+      enum:
+      - DEFAULT
+      - A
+      - B
+      - AB
+      title: StringSelection
+      description: An enumeration.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
 tags:
-- description: Start or stop MTAK sessions
-  name: MTAK
-- description: Send commands
-  name: COMMAND
-- description: Query EVR telemetry
-  name: EVR
-- description: Query EHA telemetry
-  name: EHA
-- description: Check service health
-  name: HEALTH
+- name: MTAK
+  description: Start or stop MTAK sessions
+- name: COMMAND
+  description: Send commands
+- name: HEALTH
+  description: Check service health

@@ -63,7 +63,6 @@ import math
 import yaml
 import json
 import pyaml_env
-from typing import List
 import uvicorn
 from fastapi import FastAPI, APIRouter, HTTPException
 from fastapi.openapi.utils import get_openapi
@@ -72,11 +71,9 @@ from fastapi.responses import JSONResponse, Response
 # from core import core_util
 from core.schema import MtakStartBodyModel, FswCmdBodyModel, HwCmdBodyModel, \
     SseCmdBodyModel, BinaryFileBodyModel, ScmfFileBodyModel, \
-    EvrRtBodyModel, EvrRtMultiBodyModel, EVRObjectResp, \
-    EhaRtBodyModel, EhaRtMultiBodyModel, ChannelValueObjectRespModel, \
     HealthStatus, HealthStatusEnum, \
     MtakStartResponse, ErrorResponse, \
-    CmdDispatchedResp, TimeType
+    CmdDispatchedResp
 from fastapi.exceptions import RequestValidationError
 import utils
 
@@ -289,118 +286,6 @@ def scmf_file(body: ScmfFileBodyModel, response: Response):
         return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
 
 
-@prefix_router.get('/evr/realtime',
-                    responses={
-                        200: {'model': List[EVRObjectResp]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Queries the real time EVR stream for the specified EVRs',
-                    description='Queries the AMPCS Global LAD and return an array of EVR objects',
-                    tags=['EVR']
-                )
-def evr_realtime(body: EvrRtBodyModel, response: Response):
-    try:
-        evr_dicts = venue_core.get_rt_evr(sessionId=body.sessionId,
-                                    evrName=body.evrName,
-                                    eventId=body.eventId,
-                                    evrLevel=body.evrLevel,
-                                    timeType=TimeType.ERT, # Use ERT for real time query
-                                    startTime=body.startTime,
-                                    endTime=body.endTime,
-                                    timeout=body.timeout)
-        return JSONResponse(status_code=200, content=evr_dicts)
-
-    except Exception as e:
-        msg = 'Failed to query realtime EVR'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-@prefix_router.get('/evr/realtime_multi',
-                    responses={
-                        200: {'model': List[EVRObjectResp]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Queries the real time EVR stream for the specified EVRs. This supports querying multiple EVR names, etc.',
-                    description='Queries the AMPCS Global LAD and return an array of EVR objects',
-                    tags=['EVR']
-                )
-def evr_realtime_multi(body: EvrRtMultiBodyModel, response: Response):
-    try:
-        evr_dicts = venue_core.get_rt_evr_multi(sessionId=body.sessionId,
-                                    evrNames=body.evrNames,
-                                    eventIds=body.eventIds,
-                                    evrLevels=body.evrLevels,
-                                    timeType=TimeType.ERT, # Use ERT for realtime query
-                                    startTime=body.startTime,
-                                    endTime=body.endTime,
-                                    timeout=body.timeout)
-        return JSONResponse(status_code=200, content=evr_dicts)
-
-    except Exception as e:
-        msg = 'Failed to query realtime EVR'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-@prefix_router.get('/eha/realtime',
-                    responses={
-                        200: {'model': List[ChannelValueObjectRespModel]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                   summary='Queries the real time telemetry stream for a given channel',
-                   description='Queries AMPCS Global LAD and return an array of EHA channel objects',
-                   tags=['EHA']
-                )
-def eha_realtime(body: EhaRtBodyModel, response: Response):
-    try:
-        eha_dicts = venue_core.get_rt_eha(sessionId=body.sessionId,
-                                    channelId=body.channelId,
-                                    timeType=TimeType.ERT, # TODO: placeholder for R3
-                                    startTime=body.startTime,
-                                    endTime=body.endTime,
-                                    timeout=body.timeout)
-        return JSONResponse(status_code=200, content=eha_dicts)
-
-    except Exception as e:
-        msg = 'Failed to query realtime EHA'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-@prefix_router.get('/eha/realtime_multi',
-                    responses={
-                        200: {'model': List[ChannelValueObjectRespModel]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                   summary='Queries the real time telemetry stream for a given channel. This supports querying multiple channel ids, etc.',
-                   description='Queries AMPCS Global LAD and return an array of EHA channel objects',
-                   tags=['EHA']
-                )
-def eha_realtime_multi(body: EhaRtMultiBodyModel, response: Response):
-    try:
-        eha_dicts = venue_core.get_rt_eha_multi(sessionId=body.sessionId,
-                                    channelIds=body.channelIds,
-                                    timeType=TimeType.ERT, # Use ERT for realtime query
-                                    startTime=body.startTime,
-                                    endTime=body.endTime,
-                                    timeout=body.timeout)
-        return JSONResponse(status_code=200, content=eha_dicts)
-
-    except Exception as e:
-        msg = 'Failed to query realtime EHA'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
 # router needs to be added after end point definitions
 app = FastAPI()
 app.include_router(prefix_router)
@@ -494,14 +379,6 @@ tags_metadata = [
     {
         'name': 'COMMAND',
         'description': 'Send commands'
-    },
-    {
-        'name': 'EVR',
-        'description': 'Query EVR telemetry'
-    },
-    {
-        'name': 'EHA',
-        'description': 'Query EHA telemetry'
     },
     {
         'name': 'HEALTH',
