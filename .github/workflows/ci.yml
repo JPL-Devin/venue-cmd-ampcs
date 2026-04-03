@@ -9,17 +9,14 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.9'
 
       - name: Install dependencies
         run: |
@@ -32,12 +29,10 @@ jobs:
           python -m pytest tests/unit tests/integration -v --tb=short
 
       - name: Run tests with coverage
-        if: matrix.python-version == '3.9'
         run: |
           python -m pytest tests/unit tests/integration --cov=. --cov-report=term-missing --cov-report=xml -q
 
       - name: Upload coverage report
-        if: matrix.python-version == '3.9'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
