@@ -3,10 +3,17 @@ from .mtak_cmd import mtak_startup_timeout, mtak_shutdown, \
   mtak_send_fsw_cmd, mtak_send_hw_cmd, mtak_send_sse_cmd, \
   mtak_send_fsw_file, mtak_send_scmf_file
 
+from typing import List, Dict
+
 import logging
 logger = logging.getLogger(__name__)
 
-from .core_utils import get_now_isoZ
+from datetime import datetime
+
+import traceback
+from .core_utils import str2bool, get_now_isoZ, doyToIsoZ, normalize_with_microsecs
+from .schema import TimeType
+from . import lad_query
 
 def core_start_mtak (sessionIds, defaultCmdString, timeout):
   '''
@@ -143,4 +150,186 @@ def core_send_scmf_file(sessionId, filePath, disableChecks, timeout=None):
                       disableChecks=disableChecks,
                       timeout_sec=timeout)
   return (f'SCMF: {filePath} disableChecks: {disableChecks}', dispatchTimeStr)
+
+def checkSessionId(sessionId):
+  if (not isinstance(sessionId, int)):
+    raise ValueError("Invalid sessionId. Should be an integer.")
+
+
+def get_evr_dict(sessionId, eventId, vcId, evrName, evrLevel, fromSSE,
+              evrMessage, evrModule, sclk, ert, scet, isRecorded):
+  checkSessionId(sessionId)
+  return {
+    'sessionId': sessionId,
+    'evrName': evrName,
+    'vcId': vcId,
+    'eventId': eventId,
+    'evrLevel': evrLevel,
+    'fromSSE': fromSSE,
+    'evrMessage': evrMessage,
+    'evrModule': evrModule,
+    'sclk': sclk,
+    'ert': ert,
+    'scet': scet,
+    'isRecorded': isRecorded
+  }
+
+def get_rt_evr_multi(sessionId: int, timeout: int, evrNames: List[str]=[], eventIds: List[int]=[],
+              evrLevels: List[str]=[], timeType:TimeType=None, startTime=None,
+              endTime=None) -> List[Dict]:
+  '''
+  Queries for EVR using GLAD client. More than one EVR name can be queried.
+  Time format for all time types except SCLK (in GMT) is YYYY-DOYThh:mm:ss.ttt
+
+  Parameters
+  ------------------
+  sessionId:
+    AMPCS session id
+  timeout:
+    Time to wait in seconds before returning timeout
+  evrNames:
+    names of evrs to match. No wildcard is supported.
+  eventIds:
+    EVR event ids
+  evrLevels:
+    EVR levels
+  timeType:
+    Should be one of TimeType
+  startTime:
+    Begin time of query range
+  endTime:
+    End time of query range
+
+  Returns:
+  List[Dict]
+    list of evrs in dict
+  '''
+
+  try:
+    start_dt = datetime.strptime(startTime, '%Y-%jT%H:%M:%S')
+    end_dt = datetime.strptime(endTime, '%Y-%jT%H:%M:%S')
+  except ValueError as ex:
+    msg = "Expected DOY format with integer seconds - ex:2017-310T19:27:13"
+    logger.exception(msg)
+    raise Exception(msg) from ex
+
+  if (start_dt > end_dt):
+    msg = "startTime is after endTime"
+    raise Exception(msg)
+
+  try:
+    evrs = lad_query.lad_get_evr_multi(sessionId=sessionId, evrNames=evrNames,
+                        eventIds=eventIds, evrLevels=evrLevels,
+                        timeType=timeType, startTime=startTime,
+                        endTime=endTime, timeout=timeout)
+  except Exception as ex:
+    msg = 'Error when querying evrs from GlobalLad'
+    logger.error(traceback.format_exc())
+    raise Exception(msg) from ex
+
+  logger.info("Found %d EVR results from GlobalLad." %(len(evrs)))
+
+  # convert data to format required by server spec
+  evr_dicts = []
+
+  for evr in evrs:
+    evr_dict = get_evr_dict(sessionId=int(evr['sessionNumber']),
+                  eventId=int(evr['evrId']),
+                  vcId=(int(evr['vcid']) if (evr['vcid'] != "") else None),
+                  evrName=str(evr['evrName']),
+                  evrLevel=str(evr['evrLevel']),
+                  fromSSE=(not str2bool(evr['isFsw'])),
+                  evrMessage=str(evr['message']),
+                  evrModule=None,
+                  sclk=str(evr['sclk']),
+                  ert=doyToIsoZ(normalize_with_microsecs(evr['ert'])),
+                  scet=doyToIsoZ(normalize_with_microsecs(evr['scet'])),
+                  isRecorded=(not str2bool(evr['isRealTime'])))
+    evr_dicts.append(evr_dict)
+  return evr_dicts
+
+def get_eha_dict(sessionId, channelId, dn, eu, vcId, channelName,
+              channelType, channelStatus, dnAlarmState, euAlarmState,
+              sclk, ert, scet, isRecorded):
+  return {
+    'sessionId': sessionId,
+    'channelId': channelId,
+    'dn': dn,
+    'eu': eu,
+    'vcId': vcId,
+    'channelName': channelName,
+    'channelType': channelType,
+    'channelStatus': channelStatus,
+    'dnAlarmState': dnAlarmState,
+    'euAlarmState': euAlarmState,
+    'sclk': sclk,
+    'ert': ert,
+    'scet': scet,
+    'isRecorded': isRecorded
+  }
+
+def get_rt_eha_multi(sessionId: int, timeout: int, channelIds: List[str]=[], timeType:TimeType=None, startTime: str=None,
+                 endTime: str=None):
+  '''
+  Dispatches realtime eha query to globallad, validates output, and generates response
+  based on spec for eha response
+
+  Keyword arguments:
+  sessionId -- AMPCS session id
+  channelId  -- EHA channel ID (string)
+  timeType -- Should be one of TimeType enum
+  startTime -- Begin time of range (string)
+  endTime  -- End time of range (string)
+  timeout -- Internal timeout in seconds
+
+  Time format for all time types except SCLK is YYYY-DOYThh:mm:ss.ttt
+
+  Returns:
+    list of ehas in dict
+
+  '''
+  eha_dicts = []
+
+  try:
+    start_dt = datetime.strptime(startTime, '%Y-%jT%H:%M:%S')
+    end_dt = datetime.strptime(endTime, '%Y-%jT%H:%M:%S')
+  except ValueError as ex:
+    msg = 'Expected DOY format with integer seconds - ex:2017-310T19:27:13'
+    logger.exception(msg)
+    raise Exception(msg) from ex
+
+  if (start_dt > end_dt):
+    raise Exception('startTime is after endTime')
+
+  try:
+    ehas = lad_query.lad_get_eha_multi(sessionId=sessionId, channelIds=channelIds,
+                        timeType=timeType, startTime=startTime,
+                        endTime=endTime, timeout=timeout)
+  except Exception as ex:
+    msg = 'Error when querying channel values from GlobalLad'
+    logger.error(traceback.format_exc())
+    raise Exception(msg) from ex
+
+  # convert data to format required by server spec
+
+  for eha in ehas:
+    eha_dict = get_eha_dict(sessionId=int(eha['sessionNumber']),
+                channelId=str(eha['channelId']),
+                dn=str(eha['dn']),
+                eu=(float(eha['eu']) if (eha['eu'] != "") else None),
+                vcId=(int(eha['vcid']) if (eha['vcid'] != "") else None),
+                channelName=None,
+                channelType=str(eha['channelType']),
+                channelStatus=str(eha['status']),
+                dnAlarmState=str(eha['dnAlarmLevel']),
+                euAlarmState=str(eha['euAlarmLevel']),
+                sclk=str(eha['sclk']),
+                ert=doyToIsoZ(normalize_with_microsecs(eha['ert'])),
+                scet=doyToIsoZ(normalize_with_microsecs(eha['scet'])),
+                isRecorded=(not str2bool(eha['isRealTime'])))
+    eha_dicts.append(eha_dict)
+
+  logger.info(f'Got {len(ehas)} EHA results from GlobalLad.')
+
+  return eha_dicts
 

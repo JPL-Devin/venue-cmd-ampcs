@@ -273,8 +273,167 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/evr/realtime:
+    get:
+      tags:
+      - EVR
+      summary: Queries the real time EVR stream for the specified EVRs. This supports
+        querying multiple EVR names, etc.
+      description: Queries the AMPCS Global LAD and return an array of EVR objects
+      operationId: evr_realtime_multi_api_v3_evr_realtime_get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvrRtMultiBodyModel'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EVRObjectResp'
+                title: Response Evr Realtime Multi Api V3 Evr Realtime Get
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/eha/realtime:
+    get:
+      tags:
+      - EHA
+      summary: Queries the real time telemetry stream for a given channel. This supports
+        querying multiple channel ids, etc.
+      description: Queries AMPCS Global LAD and return an array of EHA channel objects
+      operationId: eha_realtime_multi_api_v3_eha_realtime_get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EhaRtMultiBodyModel'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChannelValueObjectRespModel'
+                title: Response Eha Realtime Multi Api V3 Eha Realtime Get
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    ChannelValueObjectRespModel:
+      properties:
+        dn:
+          type: string
+          title: Dn
+          description: Data number value. Only returns string for now
+          default: ''
+        eu:
+          type: number
+          title: Eu
+          description: Engineering unit value
+          default: 0.0
+        channelId:
+          type: string
+          title: Channelid
+          description: The Id of the EHA channel
+          default: ''
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session ID that the result came from
+          default: 0
+        vcId:
+          type: integer
+          title: Vcid
+          description: The virtual channel ID that the result came from
+          default: 0
+        channelName:
+          type: string
+          title: Channelname
+          description: The name of the EHA channel
+          default: ''
+        channelType:
+          type: string
+          title: Channeltype
+          description: The type of the EHA channel
+          default: ''
+        channelStatus:
+          type: string
+          title: Channelstatus
+          description: The string status of the channel if it is a table-driven channel
+            (only for boolean and status type channels)
+          default: ''
+        sclk:
+          type: string
+          title: Sclk
+          description: SCLK when this value was read
+          default: ''
+        ert:
+          type: string
+          title: Ert
+          description: Earth received (ISO-formatted) time when this value was received
+          default: ''
+        scet:
+          type: string
+          title: Scet
+          description: Correlated SCLK time in ISO format
+          default: ''
+        isRecorded:
+          type: boolean
+          title: Isrecorded
+          description: True if this is a recorded EHA, false otherwise
+          default: false
+        dnAlarmState:
+          type: string
+          title: Dnalarmstate
+          description: Indicates if the channel measurement is in alarm (on DN values)
+          default: ''
+        euAlarmState:
+          type: string
+          title: Eualarmstate
+          description: Indicates if the channel measurement is in alarm (on EU values)
+          default: ''
+      type: object
+      title: ChannelValueObjectRespModel
     BinaryFileBodyModel:
       properties:
         sessionId:
@@ -331,6 +490,151 @@ components:
           default: ''
       type: object
       title: CmdDispatchedResp
+    EVRObjectResp:
+      properties:
+        evrName:
+          type: string
+          title: Evrname
+          description: Name of the EVR
+          default: ''
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session ID
+          default: 0
+        vcId:
+          type: integer
+          title: Vcid
+          description: The virtual channel ID
+          default: 0
+        eventId:
+          type: integer
+          title: Eventid
+          description: EVR event ID
+          default: 0
+        evrLevel:
+          type: string
+          title: Evrlevel
+          description: Level of EVR
+          default: ''
+        fromSSE:
+          type: boolean
+          title: Fromsse
+          description: True if EVR is frome SSE, false otherwise
+          default: false
+        evrMessage:
+          type: string
+          title: Evrmessage
+          description: Message that this EVR contains
+          default: ''
+        evrModule:
+          type: string
+          title: Evrmodule
+          description: FSW module that generated this EVR
+          default: ''
+        sclk:
+          type: string
+          title: Sclk
+          description: SCLK for this EVR
+          default: ''
+        ert:
+          type: string
+          title: Ert
+          description: Earth received (ISO-formatted) time
+          default: ''
+        scet:
+          type: string
+          title: Scet
+          description: ISO-formatted spacecraft event time
+          default: ''
+        isRecorded:
+          type: boolean
+          title: Isrecorded
+          description: True if this is a recorded EVR (from data products)
+          default: false
+      type: object
+      title: EVRObjectResp
+    EhaRtMultiBodyModel:
+      properties:
+        sessionId:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Sessionid
+          description: The AMPCS session to query against
+        channelIds:
+          items:
+            type: string
+          type: array
+          title: Channelids
+          description: The channel IDs to search for
+        startTime:
+          type: string
+          title: Starttime
+          description: Query start time in ERT DOY UTC (2009-202T12:35:00)
+        endTime:
+          type: string
+          title: Endtime
+          description: Query end time in ERT DOY UTC (2009-202T12:35:00)
+        timeout:
+          type: integer
+          minimum: 0.0
+          title: Timeout
+          description: How long to wait in seconds for results to return
+          default: 240
+      type: object
+      required:
+      - channelIds
+      - startTime
+      - endTime
+      title: EhaRtMultiBodyModel
+    EvrRtMultiBodyModel:
+      properties:
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session to qury against
+        evrNames:
+          items:
+            type: string
+          type: array
+          title: Evrnames
+          description: Name of EVRs to retrieve. No wildcard is supported
+          default: []
+        eventIds:
+          items:
+            type: integer
+          type: array
+          title: Eventids
+          description: Event IDs of EVRs to retreive
+          default: []
+        evrLevels:
+          items:
+            type: string
+          type: array
+          title: Evrlevels
+          description: Levels of EVRs to return. Note that levels are project specific.
+          default: []
+        startTime:
+          type: string
+          title: Starttime
+          description: Query start time in ERT DOY UTC (2009-202T12:35:00)
+        endTime:
+          type: string
+          title: Endtime
+          description: Query end time in ERT DOY UTC (2009-202T12:35:00)
+        timeout:
+          type: integer
+          minimum: 0.0
+          title: Timeout
+          description: How long to wait in seconds for results to return
+          default: 240
+      type: object
+      required:
+      - sessionId
+      - startTime
+      - endTime
+      title: EvrRtMultiBodyModel
     DefaultCmdString:
       type: string
       enum:
@@ -557,10 +861,22 @@ components:
       - msg
       - type
       title: ValidationError
+    TimeType:
+      type: string
+      enum:
+      - ERT
+      - SCET
+      - SCLK
+      title: TimeType
+      description: An enumeration.
 tags:
 - name: MTAK
   description: Start or stop MTAK sessions
 - name: COMMAND
   description: Send commands
+- name: EVR
+  description: Query realtime EVR telemetry
+- name: EHA
+  description: Query realtime EHA telemetry
 - name: HEALTH
   description: Check service health
