@@ -85,11 +85,12 @@ def _mock_external_modules():
     mock_modules['lad.client'] = mock_lad_client
     mock_modules['lad.gdsclient'] = mock_lad_gdsclient
 
-    # Mock file_read_backwards if not available
-    try:
-        import file_read_backwards  # noqa: F401
-    except ImportError:
-        mock_modules['file_read_backwards'] = MagicMock()
+    # Mock modules that may not be installed outside the deployment environment
+    for optional_mod in ['file_read_backwards', 'requests']:
+        try:
+            __import__(optional_mod)
+        except ImportError:
+            mock_modules[optional_mod] = MagicMock()
 
     return mock_modules
 
