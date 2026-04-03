@@ -112,8 +112,7 @@ def health() -> HealthStatus:
                     responses={
                         200: {'model': MtakStartResponse},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Start MTAK on the venue GDS host for the specified AMPCS session ids',
                     tags=['MTAK']
@@ -140,8 +139,7 @@ def start_mtak(body: MtakStartBodyModel, response: Response):
                     status_code=204,
                     responses={
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Shutdown MTAK that was started by VenueServer',
                     tags=['MTAK']
@@ -161,8 +159,7 @@ def shutdown_mtak(response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Send a FSW command via MTAK',
                     tags=['COMMAND']
@@ -189,8 +186,7 @@ def fsw_cmd(body: FswCmdBodyModel, response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Send a HW command via MTAK',
                     tags=['COMMAND']
@@ -214,8 +210,7 @@ def hw_cmd(body: HwCmdBodyModel, response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Send a SSE command via MTAK',
                     description='Send a SSE (Simulation and Support Equipment) command via MTAK',
@@ -238,8 +233,7 @@ def sse_cmd(body: SseCmdBodyModel, response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Upload a file to flight computer via MTAK',
                     tags=['COMMAND']
@@ -268,8 +262,7 @@ def binary_file(body: BinaryFileBodyModel, response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Upload a SCMF file to flight',
                     tags=['COMMAND']    
@@ -293,8 +286,7 @@ def scmf_file(body: ScmfFileBodyModel, response: Response):
                     responses={
                         200: {'model': List[EVRObjectResp]},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Queries the real time EVR stream for the specified EVRs. This supports querying multiple EVR names, etc.',
                     description='Queries the AMPCS Global LAD and return an array of EVR objects',
@@ -322,8 +314,7 @@ def evr_realtime_multi(body: EvrRtMultiBodyModel, response: Response):
                     responses={
                         200: {'model': List[ChannelValueObjectRespModel]},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                    summary='Queries the real time telemetry stream for a given channel. This supports querying multiple channel ids, etc.',
                    description='Queries AMPCS Global LAD and return an array of EHA channel objects',
@@ -379,13 +370,7 @@ async def check_jwt(request: Request, call_next):
             return JSONResponse(status_code=401, 
                 content={'message': f'Invalid API token. {traceback.format_exc()}'})
 
-        if utils.has_permission(jwt_decoded):
-            return await call_next(request)
-        else:
-            return JSONResponse(status_code=403, 
-                content={
-                    'message': f'Does not have the required permission. Need one of {utils.ACCEPTED_SCOPES}'
-                })
+        return await call_next(request)
 
 @app.middleware('http')
 async def log_request(request: Request, call_next):
@@ -424,7 +409,6 @@ async def log_request(request: Request, call_next):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    error_json_str = json.dumps(exc.json(indent=None))
     return JSONResponse(status_code=400, 
         content={'message': str(exc)})
 

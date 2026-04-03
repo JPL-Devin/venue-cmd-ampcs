@@ -54,12 +54,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/mtak/shutdown:
     post:
       tags:
@@ -77,12 +71,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
           content:
             application/json:
               schema:
@@ -118,12 +106,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/cmd/hw_cmd:
     post:
       tags:
@@ -151,12 +133,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
           content:
             application/json:
               schema:
@@ -193,12 +169,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/cmd/binary_file:
     post:
       tags:
@@ -226,12 +196,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
           content:
             application/json:
               schema:
@@ -267,12 +231,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /api/v3/evr/realtime:
     get:
       tags:
@@ -293,10 +251,10 @@ paths:
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: '#/components/schemas/EVRObjectResp'
-                title: Response Evr Realtime Multi Api V3 Evr Realtime Get
+                type: array
+                title: Response 200 Evr Realtime Multi Api V3 Evr Realtime Get
         '400':
           description: Bad Request
           content:
@@ -305,12 +263,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
           content:
             application/json:
               schema:
@@ -335,10 +287,10 @@ paths:
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: '#/components/schemas/ChannelValueObjectRespModel'
-                title: Response Eha Realtime Multi Api V3 Eha Realtime Get
+                type: array
+                title: Response 200 Eha Realtime Multi Api V3 Eha Realtime Get
         '400':
           description: Bad Request
           content:
@@ -351,14 +303,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    BinaryFileBodyModel:
+      properties:
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session to send the command through
+        sourceFilePath:
+          type: string
+          title: Sourcefilepath
+          description: 'The full path on GDS host (ex: /proj/europa/sit/current/files/myfile.data)'
+        targetFilePath:
+          type: string
+          title: Targetfilepath
+          description: The full onboard path (i.e. /eng1/myfile.data
+        overwrite:
+          type: boolean
+          title: Overwrite
+          description: if True will overwrite any existing onboard file
+          default: true
+        fileType:
+          type: integer
+          title: Filetype
+          description: The file type that should be used to build the binary file
+            into a SCMF
+        stringSelection:
+          allOf:
+          - $ref: '#/components/schemas/StringSelection'
+          description: Specifies the MTAK string to send the command
+          default: DEFAULT
+        timeout:
+          type: integer
+          minimum: 0.0
+          title: Timeout
+          description: The timeout on the dispatch process in seconds
+          default: 10
+      type: object
+      required:
+      - sessionId
+      - sourceFilePath
+      - targetFilePath
+      - fileType
+      title: BinaryFileBodyModel
     ChannelValueObjectRespModel:
       properties:
         dn:
@@ -434,48 +422,6 @@ components:
           default: ''
       type: object
       title: ChannelValueObjectRespModel
-    BinaryFileBodyModel:
-      properties:
-        sessionId:
-          type: integer
-          title: Sessionid
-          description: The AMPCS session to send the command through
-        sourceFilePath:
-          type: string
-          title: Sourcefilepath
-          description: 'The full path on GDS host (ex: /proj/europa/sit/current/files/myfile.data)'
-        targetFilePath:
-          type: string
-          title: Targetfilepath
-          description: The full onboard path (i.e. /eng1/myfile.data
-        overwrite:
-          type: boolean
-          title: Overwrite
-          description: if True will overwrite any existing onboard file
-          default: true
-        fileType:
-          type: integer
-          title: Filetype
-          description: The file type that should be used to build the binary file
-            into a SCMF
-        stringSelection:
-          allOf:
-          - $ref: '#/components/schemas/StringSelection'
-          description: Specifies the MTAK string to send the command
-          default: DEFAULT
-        timeout:
-          type: integer
-          minimum: 0.0
-          title: Timeout
-          description: The timeout on the dispatch process in seconds
-          default: 10
-      type: object
-      required:
-      - sessionId
-      - sourceFilePath
-      - targetFilePath
-      - fileType
-      title: BinaryFileBodyModel
     CmdDispatchedResp:
       properties:
         cmdRequested:
@@ -490,6 +436,14 @@ components:
           default: ''
       type: object
       title: CmdDispatchedResp
+    DefaultCmdString:
+      type: string
+      enum:
+      - A
+      - B
+      - AB
+      title: DefaultCmdString
+      description: An enumeration.
     EVRObjectResp:
       properties:
         evrName:
@@ -557,9 +511,7 @@ components:
     EhaRtMultiBodyModel:
       properties:
         sessionId:
-          anyOf:
-          - type: integer
-          - type: 'null'
+          type: integer
           title: Sessionid
           description: The AMPCS session to query against
         channelIds:
@@ -588,6 +540,15 @@ components:
       - startTime
       - endTime
       title: EhaRtMultiBodyModel
+    ErrorResponse:
+      properties:
+        message:
+          type: string
+          title: Message
+          description: Error message
+          default: ''
+      type: object
+      title: ErrorResponse
     EvrRtMultiBodyModel:
       properties:
         sessionId:
@@ -635,23 +596,6 @@ components:
       - startTime
       - endTime
       title: EvrRtMultiBodyModel
-    DefaultCmdString:
-      type: string
-      enum:
-      - A
-      - B
-      - AB
-      title: DefaultCmdString
-      description: An enumeration.
-    ErrorResponse:
-      properties:
-        message:
-          type: string
-          title: Message
-          description: Error message
-          default: ''
-      type: object
-      title: ErrorResponse
     FswCmdBodyModel:
       properties:
         sessionId:
@@ -861,14 +805,6 @@ components:
       - msg
       - type
       title: ValidationError
-    TimeType:
-      type: string
-      enum:
-      - ERT
-      - SCET
-      - SCLK
-      title: TimeType
-      description: An enumeration.
 tags:
 - name: MTAK
   description: Start or stop MTAK sessions

@@ -6,7 +6,6 @@ import jwt
 import zlib
 
 PUBLIC_PEM_FILE = 'exec_venue_public_pem.pem'
-ACCEPTED_SCOPES = ['execute:wsts', 'execute:sit', 'execute:testbed', 'execute:other']
 
 public_pem_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 
                                PUBLIC_PEM_FILE)
@@ -54,12 +53,3 @@ def get_decoded_token (authorization_header):
     jwt_token, exec_venue_public_pem, algorithms=['RS256'])
 
   return jwt_decoded
-
-def has_permission(jwt_decoded):
-  scopes = jwt_decoded.get('scopes', [])
-  for scope in scopes:
-    # Starting R14.3, scope has both scope name and venue_group_id
-    scope_name = scope.get('scope', '') if isinstance(scope, dict) else scope
-    if scope_name in ACCEPTED_SCOPES:
-      return True
-  return False
