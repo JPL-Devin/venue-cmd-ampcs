@@ -410,13 +410,4 @@ class VenueTypeNotFound (Exception):
 class SocketConnectionError (Exception):
   pass
 
-class TimeParsingError (Exception):
-  def __init__(self, message):
-
-    # Call the base class constructor with the parameters it needs
-    super(TimeParsingError, self).__init__(message)
-
-    # Now for your custom code...
-    self.message = message
-
 
