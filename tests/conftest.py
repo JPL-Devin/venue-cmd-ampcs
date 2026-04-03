@@ -31,12 +31,12 @@ def rsa_keys():
     return private_pem, public_pem
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def auth_headers(rsa_keys):
     """Generate valid JWT auth headers using the ephemeral RSA keypair."""
     private_pem, _ = rsa_keys
     token = pyjwt.encode(
-        {'username': 'testuser', 'iat': int(time.time()), 'exp': int(time.time()) + 3600},
+        {'username': 'testuser', 'iat': int(time.time()), 'exp': int(time.time()) + 86400},
         private_pem,
         algorithm='RS256'
     )
@@ -46,7 +46,7 @@ def auth_headers(rsa_keys):
     }
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def expired_auth_headers(rsa_keys):
     """Generate expired JWT auth headers."""
     private_pem, _ = rsa_keys
@@ -102,46 +102,40 @@ for mod_name, mod_mock in _MOCK_MODULES.items():
         sys.modules[mod_name] = mod_mock
 
 
-@pytest.fixture
+# Import app modules once at conftest load time (after external mocks are in place).
+# Patch builtins.open so utils.py can load a PEM file placeholder during import.
+# The actual public key is overwritten per-session by the app_client fixture.
+import builtins as _builtins
+_original_open = _builtins.open
+
+def _patched_open(path, *args, **kwargs):
+    if isinstance(path, str) and 'exec_venue_public_pem.pem' in path:
+        from io import StringIO
+        return StringIO('placeholder')
+    return _original_open(path, *args, **kwargs)
+
+_builtins.open = _patched_open
+import utils as _utils   # noqa: E402
+import main as _main     # noqa: E402
+_builtins.open = _original_open
+
+
+@pytest.fixture(scope='session')
 def app_client(rsa_keys):
     """
     Create a FastAPI TestClient with all external dependencies mocked.
     Patches the JWT public key so our ephemeral RSA keys are accepted.
+
+    Session-scoped and imports app modules once at conftest load time so that
+    all test patches target the same module objects. This avoids Python 3.12
+    PicklingError with ProcessPoolExecutor when module references diverge
+    across re-imports.
     """
     _, public_pem = rsa_keys
 
-    # We need to patch the public key used for JWT verification in utils module.
-    # The app module imports utils at module level, so we patch after import.
-    # Clear any cached app module state to get fresh imports
-    modules_to_clear = [k for k in sys.modules if k.startswith(('main', 'core.', 'utils'))]
-    saved_modules = {}
-    for mod in modules_to_clear:
-        saved_modules[mod] = sys.modules.pop(mod)
+    # Overwrite the placeholder public key that utils loaded during import
+    _utils.exec_venue_public_pem = public_pem
 
-    try:
-        # Patch the PEM file open so utils.py doesn't fail on missing file
-        import builtins
-        original_open = builtins.open
-
-        def patched_open(path, *args, **kwargs):
-            if isinstance(path, str) and 'exec_venue_public_pem.pem' in path:
-                from io import StringIO
-                return StringIO(public_pem)
-            return original_open(path, *args, **kwargs)
-
-        with patch.object(builtins, 'open', side_effect=patched_open):
-            import utils
-            import main
-            from fastapi.testclient import TestClient
-            # Also patch the already-loaded public key
-            utils.exec_venue_public_pem = public_pem
-
-        client = TestClient(main.app)
-        yield client
-    finally:
-        # Restore original modules
-        modules_to_clear_again = [k for k in sys.modules if k.startswith(('main', 'core.', 'utils'))]
-        for mod in modules_to_clear_again:
-            sys.modules.pop(mod, None)
-        for mod, module in saved_modules.items():
-            sys.modules[mod] = module
+    from fastapi.testclient import TestClient
+    client = TestClient(_main.app)
+    yield client
