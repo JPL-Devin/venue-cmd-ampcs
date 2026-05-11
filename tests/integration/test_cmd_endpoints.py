@@ -55,6 +55,35 @@ class TestFswCmd:
         )
         assert response.status_code == 401
 
+    def test_fsw_cmd_with_data_path(self, app_client, auth_headers):
+        from core import datapath_store
+        datapath_store.clear()
+        datapath_store.set_datapath('dp-alpha', 17)
+        try:
+            with patch('core.venue_core.core_send_fsw_cmd') as mock_send:
+                mock_send.return_value = ('CMD_NO_OP', '2024-04-10T12:00:00.000Z')
+                response = app_client.post(
+                    '/api/v3/cmd/fsw_cmd',
+                    json={'dataPath': 'dp-alpha', 'commandString': 'CMD_NO_OP'},
+                    headers=auth_headers
+                )
+                assert response.status_code == 200
+                kwargs = mock_send.call_args.kwargs
+                assert kwargs['sessionId'] == 17
+        finally:
+            datapath_store.clear()
+
+    def test_fsw_cmd_with_unknown_data_path_returns_400(self, app_client, auth_headers):
+        from core import datapath_store
+        datapath_store.clear()
+        response = app_client.post(
+            '/api/v3/cmd/fsw_cmd',
+            json={'dataPath': 'missing-dp', 'commandString': 'CMD_NO_OP'},
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+        assert 'DataPath not found' in response.json()['message']
+
 
 class TestHwCmd:
     def test_hw_cmd_success(self, app_client, auth_headers):

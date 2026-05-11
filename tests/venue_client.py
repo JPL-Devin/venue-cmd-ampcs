@@ -55,10 +55,35 @@ else:
 
 def start_mtak(server, sessionIds, timeout=60, defaultCmdString='AB'):
     url = f'{server}/mtak/start'
-    res = requests.post(url, 
-	    json={'sessionIds': sessionIds, 'timeout': timeout, 'defaultCmdString': defaultCmdString},
+    res = requests.post(url,
+	    json={
+            'sessions': [{'sessionId': sid} for sid in sessionIds],
+            'timeout': timeout,
+            'defaultCmdString': defaultCmdString,
+        },
         headers=exec_shared_dict['headers']
     )
+    return res
+
+
+def create_datapath(server, dataPath, sessionId):
+    url = f'{server}/datapath'
+    res = requests.post(url,
+        json={'dataPath': dataPath, 'sessionId': sessionId},
+        headers=exec_shared_dict['headers']
+    )
+    return res
+
+
+def get_datapath(server, dataPath):
+    url = f'{server}/datapath/{dataPath}'
+    res = requests.get(url, headers=exec_shared_dict['headers'])
+    return res
+
+
+def delete_datapath(server, dataPath):
+    url = f'{server}/datapath/{dataPath}'
+    res = requests.delete(url, headers=exec_shared_dict['headers'])
     return res
 
 def shutdown_mtak(server):

@@ -303,6 +303,120 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/datapath:
+    post:
+      tags:
+      - DATA_PATH
+      summary: Create or update a DataPath alias for an AMPCS sessionId
+      operationId: create_datapath_api_v3_datapath_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataPathMappingModel'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataPathMappingModel'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v3/datapath/{data_path}:
+    get:
+      tags:
+      - DATA_PATH
+      summary: Look up the AMPCS sessionId for a DataPath alias
+      operationId: get_datapath_api_v3_datapath__data_path__get
+      parameters:
+      - name: data_path
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Data Path
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataPathMappingModel'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - DATA_PATH
+      summary: Delete a DataPath alias
+      operationId: delete_datapath_api_v3_datapath__data_path__delete
+      parameters:
+      - name: data_path
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Data Path
+      responses:
+        '204':
+          description: Successful Response
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     BinaryFileBodyModel:
@@ -311,6 +425,10 @@ components:
           type: integer
           title: Sessionid
           description: The AMPCS session to send the command through
+        dataPath:
+          type: string
+          title: Datapath
+          description: DataPath alias for an AMPCS session
         sourceFilePath:
           type: string
           title: Sourcefilepath
@@ -342,7 +460,6 @@ components:
           default: 10
       type: object
       required:
-      - sessionId
       - sourceFilePath
       - targetFilePath
       - fileType
@@ -436,6 +553,21 @@ components:
           default: ''
       type: object
       title: CmdDispatchedResp
+    DataPathMappingModel:
+      properties:
+        dataPath:
+          type: string
+          title: Datapath
+          description: A user-defined string alias for an AMPCS session
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session ID
+      type: object
+      required:
+      - dataPath
+      - sessionId
+      title: DataPathMappingModel
     DefaultCmdString:
       type: string
       enum:
@@ -514,6 +646,10 @@ components:
           type: integer
           title: Sessionid
           description: The AMPCS session to query against
+        dataPath:
+          type: string
+          title: Datapath
+          description: DataPath alias for an AMPCS session
         channelIds:
           items:
             type: string
@@ -555,6 +691,10 @@ components:
           type: integer
           title: Sessionid
           description: The AMPCS session to qury against
+        dataPath:
+          type: string
+          title: Datapath
+          description: DataPath alias for an AMPCS session
         evrNames:
           items:
             type: string
@@ -592,7 +732,6 @@ components:
           default: 240
       type: object
       required:
-      - sessionId
       - startTime
       - endTime
       title: EvrRtMultiBodyModel
@@ -602,6 +741,10 @@ components:
           type: integer
           title: Sessionid
           description: The AMPCS session to send the command through
+        dataPath:
+          type: string
+          title: Datapath
+          description: DataPath alias for an AMPCS session
         commandString:
           type: string
           title: Commandstring
@@ -625,7 +768,6 @@ components:
           default: 10
       type: object
       required:
-      - sessionId
       - commandString
       title: FswCmdBodyModel
     HTTPValidationError:
@@ -666,6 +808,10 @@ components:
           type: integer
           title: Sessionid
           description: The AMPCS session to send this file through
+        dataPath:
+          type: string
+          title: Datapath
+          description: DataPath alias for an AMPCS session
         commandStem:
           type: string
           title: Commandstem
@@ -683,17 +829,28 @@ components:
           default: 10
       type: object
       required:
-      - sessionId
       - commandStem
       title: HwCmdBodyModel
+    MtakSessionEntry:
+      properties:
+        sessionId:
+          type: integer
+          title: Sessionid
+          description: The AMPCS session ID
+        dataPath:
+          type: string
+          title: Datapath
+          description: DataPath alias for an AMPCS session
+      type: object
+      title: MtakSessionEntry
     MtakStartBodyModel:
       properties:
-        sessionIds:
+        sessions:
           items:
-            type: integer
+            $ref: '#/components/schemas/MtakSessionEntry'
           type: array
-          title: Sessionids
-          description: AMPCS session ids to start MTAK on
+          title: Sessions
+          description: List of sessions to start MTAK on
         timeout:
           type: integer
           minimum: 25.0
@@ -704,12 +861,12 @@ components:
         defaultCmdString:
           allOf:
           - $ref: '#/components/schemas/DefaultCmdString'
-          description: Which sides of flight computer the command is for. This will
-            be used if default is used for stringSelection.
+          description: Which sides of flight computer the command is for. Applied
+            uniformly to all sessions.
           default: AB
       type: object
       required:
-      - sessionIds
+      - sessions
       title: MtakStartBodyModel
     MtakStartResponse:
       properties:
@@ -734,6 +891,10 @@ components:
           type: integer
           title: Sessionid
           description: The AMPCS session to send the command through
+        dataPath:
+          type: string
+          title: Datapath
+          description: DataPath alias for an AMPCS session
         filePath:
           type: string
           title: Filepath
@@ -751,7 +912,6 @@ components:
           default: 10
       type: object
       required:
-      - sessionId
       - filePath
       title: ScmfFileBodyModel
     SseCmdBodyModel:
@@ -760,6 +920,10 @@ components:
           type: integer
           title: Sessionid
           description: The AMPCS session to send the command through
+        dataPath:
+          type: string
+          title: Datapath
+          description: DataPath alias for an AMPCS session
         commandString:
           type: string
           title: Commandstring
@@ -772,7 +936,6 @@ components:
           default: 10
       type: object
       required:
-      - sessionId
       - commandString
       title: SseCmdBodyModel
     StringSelection:
@@ -816,3 +979,5 @@ tags:
   description: Query realtime EHA telemetry
 - name: HEALTH
   description: Check service health
+- name: DATA_PATH
+  description: Manage DataPath to SessionId mappings

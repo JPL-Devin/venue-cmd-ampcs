@@ -22,10 +22,26 @@ class TestRequestValidation:
         )
         assert response.status_code == 400
 
+    def test_both_session_id_and_data_path_returns_400(self, app_client, auth_headers):
+        response = app_client.post(
+            '/api/v3/cmd/fsw_cmd',
+            json={'sessionId': 1, 'dataPath': 'dp-alpha', 'commandString': 'CMD_NO_OP'},
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+
+    def test_neither_session_id_nor_data_path_returns_400(self, app_client, auth_headers):
+        response = app_client.post(
+            '/api/v3/cmd/fsw_cmd',
+            json={'commandString': 'CMD_NO_OP'},
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+
     def test_invalid_enum_value_returns_400(self, app_client, auth_headers):
         response = app_client.post(
             '/api/v3/mtak/start',
-            json={'sessionIds': [1], 'defaultCmdString': 'INVALID'},
+            json={'sessions': [{'sessionId': 1}], 'defaultCmdString': 'INVALID'},
             headers=auth_headers
         )
         assert response.status_code == 400
@@ -33,7 +49,7 @@ class TestRequestValidation:
     def test_timeout_below_minimum_returns_400(self, app_client, auth_headers):
         response = app_client.post(
             '/api/v3/mtak/start',
-            json={'sessionIds': [1], 'timeout': 10},
+            json={'sessions': [{'sessionId': 1}], 'timeout': 10},
             headers=auth_headers
         )
         assert response.status_code == 400
@@ -62,7 +78,7 @@ class TestRequestValidation:
         )
         assert response.status_code == 400
 
-    def test_missing_session_ids_for_mtak_start_returns_400(self, app_client, auth_headers):
+    def test_missing_sessions_for_mtak_start_returns_400(self, app_client, auth_headers):
         response = app_client.post(
             '/api/v3/mtak/start',
             json={'timeout': 30},

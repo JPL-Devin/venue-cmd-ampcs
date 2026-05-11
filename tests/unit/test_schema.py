@@ -9,7 +9,8 @@ from core.schema import (
     FswCmdBodyModel, CmdDispatchedResp, HwCmdBodyModel, SseCmdBodyModel,
     BinaryFileBodyModel, ScmfFileBodyModel,
     EvrRtMultiBodyModel, TimeType, EVRObjectResp,
-    ChannelValueObjectRespModel, EhaRtMultiBodyModel
+    ChannelValueObjectRespModel, EhaRtMultiBodyModel,
+    DataPathMappingModel, MtakSessionEntry
 )
 
 
@@ -51,24 +52,79 @@ class TestErrorResponse:
 
 class TestMtakStartBodyModel:
     def test_minimal_valid(self):
-        body = MtakStartBodyModel(sessionIds=[1])
-        assert body.sessionIds == [1]
+        body = MtakStartBodyModel(sessions=[{'sessionId': 1}])
+        assert len(body.sessions) == 1
+        assert body.sessions[0].sessionId == 1
+        assert body.sessions[0].dataPath is None
         assert body.timeout == 30
         assert body.defaultCmdString == DefaultCmdString.AB
 
     def test_custom_values(self):
-        body = MtakStartBodyModel(sessionIds=[1, 2], timeout=60, defaultCmdString='A')
-        assert body.sessionIds == [1, 2]
+        body = MtakStartBodyModel(
+            sessions=[{'sessionId': 1}, {'dataPath': 'dp-alpha'}],
+            timeout=60,
+            defaultCmdString='A'
+        )
+        assert len(body.sessions) == 2
+        assert body.sessions[0].sessionId == 1
+        assert body.sessions[1].dataPath == 'dp-alpha'
         assert body.timeout == 60
         assert body.defaultCmdString == DefaultCmdString.A
 
     def test_timeout_below_minimum_raises(self):
         with pytest.raises(ValidationError):
-            MtakStartBodyModel(sessionIds=[1], timeout=10)
+            MtakStartBodyModel(sessions=[{'sessionId': 1}], timeout=10)
 
-    def test_missing_session_ids_raises(self):
+    def test_missing_sessions_raises(self):
         with pytest.raises(ValidationError):
             MtakStartBodyModel()
+
+    def test_entry_with_both_raises(self):
+        with pytest.raises(ValidationError):
+            MtakStartBodyModel(sessions=[{'sessionId': 1, 'dataPath': 'dp-alpha'}])
+
+    def test_entry_with_neither_raises(self):
+        with pytest.raises(ValidationError):
+            MtakStartBodyModel(sessions=[{}])
+
+
+class TestDataPathMappingModel:
+    def test_valid(self):
+        m = DataPathMappingModel(dataPath='dp-alpha', sessionId=42)
+        assert m.dataPath == 'dp-alpha'
+        assert m.sessionId == 42
+
+    def test_missing_data_path_raises(self):
+        with pytest.raises(ValidationError):
+            DataPathMappingModel(sessionId=1)
+
+    def test_missing_session_id_raises(self):
+        with pytest.raises(ValidationError):
+            DataPathMappingModel(dataPath='dp')
+
+    def test_wrong_session_id_type_raises(self):
+        with pytest.raises(ValidationError):
+            DataPathMappingModel(dataPath='dp', sessionId='not-an-int')
+
+
+class TestMtakSessionEntry:
+    def test_session_id_only(self):
+        e = MtakSessionEntry(sessionId=1)
+        assert e.sessionId == 1
+        assert e.dataPath is None
+
+    def test_data_path_only(self):
+        e = MtakSessionEntry(dataPath='dp-alpha')
+        assert e.sessionId is None
+        assert e.dataPath == 'dp-alpha'
+
+    def test_both_raises(self):
+        with pytest.raises(ValidationError):
+            MtakSessionEntry(sessionId=1, dataPath='dp-alpha')
+
+    def test_neither_raises(self):
+        with pytest.raises(ValidationError):
+            MtakSessionEntry()
 
 
 class TestMtakStartResponse:
@@ -90,10 +146,24 @@ class TestFswCmdBodyModel:
     def test_minimal_valid(self):
         body = FswCmdBodyModel(sessionId=1, commandString='CMD_NO_OP')
         assert body.sessionId == 1
+        assert body.dataPath is None
         assert body.commandString == 'CMD_NO_OP'
         assert body.validate_ is True
         assert body.stringSelection == StringSelection.DEFAULT
         assert body.timeout == 10
+
+    def test_with_data_path(self):
+        body = FswCmdBodyModel(dataPath='dp-alpha', commandString='CMD_NO_OP')
+        assert body.sessionId is None
+        assert body.dataPath == 'dp-alpha'
+
+    def test_both_raises(self):
+        with pytest.raises(ValidationError):
+            FswCmdBodyModel(sessionId=1, dataPath='dp', commandString='CMD_NO_OP')
+
+    def test_neither_raises(self):
+        with pytest.raises(ValidationError):
+            FswCmdBodyModel(commandString='CMD_NO_OP')
 
     def test_validate_alias(self):
         body = FswCmdBodyModel(**{'sessionId': 1, 'commandString': 'CMD_NO_OP', 'validate': False})
@@ -233,16 +303,6 @@ class TestChannelValueObjectRespModel:
 
 
 class TestEhaRtMultiBodyModel:
-    def test_minimal_valid(self):
-        body = EhaRtMultiBodyModel(
-            channelIds=['CH-0001'],
-            startTime='2024-100T12:00:00',
-            endTime='2024-100T13:00:00'
-        )
-        assert body.sessionId is None
-        assert body.channelIds == ['CH-0001']
-        assert body.timeout == 240
-
     def test_with_session_id(self):
         body = EhaRtMultiBodyModel(
             sessionId=1,
@@ -251,6 +311,37 @@ class TestEhaRtMultiBodyModel:
             endTime='2024-100T13:00:00'
         )
         assert body.sessionId == 1
+        assert body.dataPath is None
+        assert body.channelIds == ['CH-0001']
+        assert body.timeout == 240
+
+    def test_with_data_path(self):
+        body = EhaRtMultiBodyModel(
+            dataPath='dp-alpha',
+            channelIds=['CH-0001'],
+            startTime='2024-100T12:00:00',
+            endTime='2024-100T13:00:00'
+        )
+        assert body.sessionId is None
+        assert body.dataPath == 'dp-alpha'
+
+    def test_neither_raises(self):
+        with pytest.raises(ValidationError):
+            EhaRtMultiBodyModel(
+                channelIds=['CH-0001'],
+                startTime='2024-100T12:00:00',
+                endTime='2024-100T13:00:00'
+            )
+
+    def test_both_raises(self):
+        with pytest.raises(ValidationError):
+            EhaRtMultiBodyModel(
+                sessionId=1,
+                dataPath='dp-alpha',
+                channelIds=['CH-0001'],
+                startTime='2024-100T12:00:00',
+                endTime='2024-100T13:00:00'
+            )
 
     def test_missing_required_raises(self):
         with pytest.raises(ValidationError):
