@@ -76,7 +76,9 @@ from core.schema import MtakStartBodyModel, FswCmdBodyModel, HwCmdBodyModel, \
     ChannelValueObjectRespModel, \
     HealthStatus, HealthStatusEnum, \
     MtakStartResponse, ErrorResponse, \
-    CmdDispatchedResp, TimeType
+    CmdDispatchedResp, TimeType, \
+    DataPathMappingModel
+from core import datapath_store
 from fastapi.exceptions import RequestValidationError
 import utils
 
@@ -93,6 +95,14 @@ def check_default_cmd_string(default_cmd_string):
     return default_cmd_string
   else:
     return None
+
+
+def resolve_session_id(session_id, data_path):
+    if session_id is not None:
+        return session_id
+    if data_path is not None:
+        return datapath_store.get_session_id(data_path)
+    raise HTTPException(status_code=400, detail='Either sessionId or dataPath must be provided')
 
 
 @prefix_router.get('/health', 
@@ -123,7 +133,9 @@ def start_mtak(body: MtakStartBodyModel, response: Response):
 
         logger.info(f'defaultCmdString: {body.defaultCmdString.value} {type(body.defaultCmdString.value)}')
 
-        sessionIds, startTime = venue_core.core_start_mtak(sessionIds=body.sessionIds,
+        session_ids = [resolve_session_id(e.sessionId, e.dataPath) for e in body.sessions]
+
+        sessionIds, startTime = venue_core.core_start_mtak(sessionIds=session_ids,
                                    defaultCmdString=body.defaultCmdString.value,
                                    timeout=body.timeout)
 
@@ -155,6 +167,78 @@ def shutdown_mtak(response: Response):
         return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
 
 
+@prefix_router.post('/datapath',
+                    responses={
+                        200: {'model': DataPathMappingModel},
+                        400: {'model': ErrorResponse},
+                        401: {'model': ErrorResponse}
+                    },
+                    summary='Create or update a DataPath alias for an AMPCS sessionId',
+                    tags=['DATA_PATH']
+                )
+def create_datapath(body: DataPathMappingModel, response: Response):
+    try:
+        datapath_store.set_datapath(body.dataPath, body.sessionId)
+        return DataPathMappingModel(dataPath=body.dataPath, sessionId=body.sessionId)
+    except Exception as ex:
+        msg = 'Failed to set DataPath mapping'
+        logging.exception(msg)
+        response.status_code = 400
+        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
+
+
+@prefix_router.get('/datapath/{data_path}',
+                    responses={
+                        200: {'model': DataPathMappingModel},
+                        400: {'model': ErrorResponse},
+                        401: {'model': ErrorResponse},
+                        404: {'model': ErrorResponse}
+                    },
+                    summary='Look up the AMPCS sessionId for a DataPath alias',
+                    tags=['DATA_PATH']
+                )
+def get_datapath(data_path: str, response: Response):
+    try:
+        session_id = datapath_store.get_session_id(data_path)
+        return DataPathMappingModel(dataPath=data_path, sessionId=session_id)
+    except KeyError as ex:
+        msg = f'DataPath not found: {data_path}'
+        logger.info(msg)
+        response.status_code = 404
+        return ErrorResponse(message=msg)
+    except Exception as ex:
+        msg = 'Failed to get DataPath mapping'
+        logging.exception(msg)
+        response.status_code = 400
+        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
+
+
+@prefix_router.delete('/datapath/{data_path}',
+                    status_code=204,
+                    responses={
+                        400: {'model': ErrorResponse},
+                        401: {'model': ErrorResponse},
+                        404: {'model': ErrorResponse}
+                    },
+                    summary='Delete a DataPath alias',
+                    tags=['DATA_PATH']
+                )
+def delete_datapath(data_path: str, response: Response):
+    try:
+        datapath_store.delete_datapath(data_path)
+        return Response(status_code=204)
+    except KeyError as ex:
+        msg = f'DataPath not found: {data_path}'
+        logger.info(msg)
+        response.status_code = 404
+        return ErrorResponse(message=msg)
+    except Exception as ex:
+        msg = 'Failed to delete DataPath mapping'
+        logging.exception(msg)
+        response.status_code = 400
+        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
+
+
 @prefix_router.post('/cmd/fsw_cmd',
                     responses={
                         200: {'model': CmdDispatchedResp},
@@ -166,9 +250,10 @@ def shutdown_mtak(response: Response):
                 )
 def fsw_cmd(body: FswCmdBodyModel, response: Response):
     try:
+        resolved_session_id = resolve_session_id(body.sessionId, body.dataPath)
         string_selection = check_default_cmd_string(body.stringSelection.value)
 
-        cmdRequested, dispatchTime = venue_core.core_send_fsw_cmd(sessionId=body.sessionId,
+        cmdRequested, dispatchTime = venue_core.core_send_fsw_cmd(sessionId=resolved_session_id,
                                     validate=body.validate_,
                                     cmdString=body.commandString,
                                     stringSelection=string_selection,
@@ -193,9 +278,10 @@ def fsw_cmd(body: FswCmdBodyModel, response: Response):
                 )
 def hw_cmd(body: HwCmdBodyModel, response: Response):
     try:
+        resolved_session_id = resolve_session_id(body.sessionId, body.dataPath)
         string_selection = check_default_cmd_string(body.stringSelection.value)
 
-        cmdRequested, dispatchTime = venue_core.core_send_hw_cmd(sessionId=body.sessionId,
+        cmdRequested, dispatchTime = venue_core.core_send_hw_cmd(sessionId=resolved_session_id,
                                     cmdStem=body.commandStem,
                                     stringSelection=string_selection,
                                     timeout=body.timeout)
@@ -218,7 +304,8 @@ def hw_cmd(body: HwCmdBodyModel, response: Response):
                 )
 def sse_cmd(body: SseCmdBodyModel, response: Response):
     try:
-        cmdRequested, dispatchTime = venue_core.core_send_sse_cmd(sessionId=body.sessionId,
+        resolved_session_id = resolve_session_id(body.sessionId, body.dataPath)
+        cmdRequested, dispatchTime = venue_core.core_send_sse_cmd(sessionId=resolved_session_id,
                                     cmdString=body.commandString,
                                     timeout=body.timeout)
         return JSONResponse(status_code=200, content={'cmdRequested': cmdRequested, 'dispatchTime': dispatchTime})
@@ -240,10 +327,11 @@ def sse_cmd(body: SseCmdBodyModel, response: Response):
                 )
 def binary_file(body: BinaryFileBodyModel, response: Response):
     try:
+        resolved_session_id = resolve_session_id(body.sessionId, body.dataPath)
         string_selection = check_default_cmd_string(body.stringSelection.value)
         
         cmdRequested, dispatchTime = venue_core.core_send_fsw_file(
-            sessionId=body.sessionId,                                                
+            sessionId=resolved_session_id,                                                
             sourcePath=body.sourceFilePath,
             targetLoc=body.targetFilePath,
             fileType=body.fileType,
@@ -268,9 +356,10 @@ def binary_file(body: BinaryFileBodyModel, response: Response):
                     tags=['COMMAND']    
                 )
 def scmf_file(body: ScmfFileBodyModel, response: Response):
-    try:        
+    try:
+        resolved_session_id = resolve_session_id(body.sessionId, body.dataPath)
         cmdRequested, dispatchTime = venue_core.core_send_scmf_file(
-            sessionId=body.sessionId,                                                
+            sessionId=resolved_session_id,                                                
             filePath=body.filePath,
             disableChecks=body.disableChecks,
             timeout=body.timeout)
@@ -294,7 +383,8 @@ def scmf_file(body: ScmfFileBodyModel, response: Response):
                 )
 def evr_realtime_multi(body: EvrRtMultiBodyModel, response: Response):
     try:
-        evr_dicts = venue_core.get_rt_evr_multi(sessionId=body.sessionId,
+        resolved_session_id = resolve_session_id(body.sessionId, body.dataPath)
+        evr_dicts = venue_core.get_rt_evr_multi(sessionId=resolved_session_id,
                                     evrNames=body.evrNames,
                                     eventIds=body.eventIds,
                                     evrLevels=body.evrLevels,
@@ -322,7 +412,8 @@ def evr_realtime_multi(body: EvrRtMultiBodyModel, response: Response):
                 )
 def eha_realtime_multi(body: EhaRtMultiBodyModel, response: Response):
     try:
-        eha_dicts = venue_core.get_rt_eha_multi(sessionId=body.sessionId,
+        resolved_session_id = resolve_session_id(body.sessionId, body.dataPath)
+        eha_dicts = venue_core.get_rt_eha_multi(sessionId=resolved_session_id,
                                     channelIds=body.channelIds,
                                     timeType=TimeType.ERT, # Use ERT for realtime query
                                     startTime=body.startTime,
@@ -431,6 +522,10 @@ tags_metadata = [
     {
         'name': 'EHA',
         'description': 'Query realtime EHA telemetry'
+    },
+    {
+        'name': 'DATA_PATH',
+        'description': 'Manage DataPath to SessionId mappings'
     },
     {
         'name': 'HEALTH',

@@ -26,6 +26,7 @@ class TestEhaRealtime:
                 'GET',
                 '/api/v3/eha/realtime',
                 json={
+                    'sessionId': 1,
                     'channelIds': ['CH-0001'],
                     'startTime': '2024-100T12:00:00',
                     'endTime': '2024-100T13:00:00'
@@ -60,6 +61,7 @@ class TestEhaRealtime:
                 'GET',
                 '/api/v3/eha/realtime',
                 json={
+                    'sessionId': 1,
                     'channelIds': ['CH-0001'],
                     'startTime': '2024-100T12:00:00',
                     'endTime': '2024-100T13:00:00'
@@ -75,6 +77,7 @@ class TestEhaRealtime:
                 'GET',
                 '/api/v3/eha/realtime',
                 json={
+                    'sessionId': 1,
                     'channelIds': ['CH-0001'],
                     'startTime': '2024-100T12:00:00',
                     'endTime': '2024-100T13:00:00'
@@ -89,6 +92,7 @@ class TestEhaRealtime:
             'GET',
             '/api/v3/eha/realtime',
             content=json.dumps({
+                'sessionId': 1,
                 'channelIds': ['CH-0001'],
                 'startTime': '2024-100T12:00:00',
                 'endTime': '2024-100T13:00:00'
@@ -96,3 +100,42 @@ class TestEhaRealtime:
             headers={'Content-Type': 'application/json'}
         )
         assert response.status_code == 401
+
+    def test_eha_realtime_with_data_path(self, app_client, auth_headers):
+        from core import datapath_store
+        datapath_store.clear()
+        datapath_store.set_datapath('dp-beta', 99)
+        try:
+            with patch('core.venue_core.get_rt_eha_multi') as mock_eha:
+                mock_eha.return_value = []
+                response = app_client.request(
+                    'GET',
+                    '/api/v3/eha/realtime',
+                    json={
+                        'dataPath': 'dp-beta',
+                        'channelIds': ['CH-0001'],
+                        'startTime': '2024-100T12:00:00',
+                        'endTime': '2024-100T13:00:00'
+                    },
+                    headers=auth_headers
+                )
+                assert response.status_code == 200
+                kwargs = mock_eha.call_args.kwargs
+                assert kwargs['sessionId'] == 99
+        finally:
+            datapath_store.clear()
+
+    def test_eha_realtime_both_session_and_datapath_returns_400(self, app_client, auth_headers):
+        response = app_client.request(
+            'GET',
+            '/api/v3/eha/realtime',
+            json={
+                'sessionId': 1,
+                'dataPath': 'dp-beta',
+                'channelIds': ['CH-0001'],
+                'startTime': '2024-100T12:00:00',
+                'endTime': '2024-100T13:00:00'
+            },
+            headers=auth_headers
+        )
+        assert response.status_code == 400
