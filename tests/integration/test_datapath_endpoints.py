@@ -83,6 +83,12 @@ class TestGetDatapath:
         response = app_client.get('/api/v3/datapath/dp-alpha')
         assert response.status_code == 401
 
+    def test_get_data_path_named_health_still_requires_auth(self, app_client):
+        # Regression: the health-endpoint JWT bypass must match the exact
+        # /api/v3/health path, not arbitrary paths ending in /health.
+        response = app_client.get('/api/v3/datapath/health')
+        assert response.status_code == 401
+
 
 class TestDeleteDatapath:
     def test_delete_success(self, app_client, auth_headers):
@@ -105,6 +111,12 @@ class TestDeleteDatapath:
 
     def test_delete_requires_auth(self, app_client):
         response = app_client.delete('/api/v3/datapath/dp-alpha')
+        assert response.status_code == 401
+
+    def test_delete_data_path_named_health_still_requires_auth(self, app_client):
+        # Regression: the health-endpoint JWT bypass must match the exact
+        # /api/v3/health path, not arbitrary paths ending in /health.
+        response = app_client.delete('/api/v3/datapath/health')
         assert response.status_code == 401
 
 

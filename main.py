@@ -447,7 +447,7 @@ async def check_jwt(request: Request, call_next):
         # docs end point does not require JWT token
         return await call_next(request)
     
-    if request.url.path.endswith('/health'):
+    if request.url.path == '/api/v3/health':
         # health end point does not require JWT token
         return await call_next(request)
     else:
