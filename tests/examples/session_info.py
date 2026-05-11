@@ -31,7 +31,7 @@ def generate_exec_token():
                          exec_venue_private_pem,
                          algorithm='RS256')
 
-    token_str = encoded_token.decode('utf-8')
+    token_str = encoded_token if isinstance(encoded_token, str) else encoded_token.decode('utf-8')
     auth_header = 'Bearer {0}'.format(token_str)
     exec_headers['Authorization'] = auth_header
     exec_shared_dict['headers'] = exec_headers  
@@ -45,13 +45,11 @@ if hostname.startswith('eurc'):
     CMD_COMP_EVR = 'CMD_SVC_EVR_CMD_COMPLETED_SUCCESS'
     CMD_DISPATCHED_EVR = 'CMD_SVC_EVR_VC1_CMD_DISPATCHED'
     CMD_COUNTER_EHA = 'CMD-0027'
-    CMD_DOWN_DP = 'DDM_MANAGE_DWN_PB,DATA_PRODUCTS,ENABLE'
 elif hostname.startswith('psyche'):
     CMD_NO_OP = 'CMD_NO_OP'
     CMD_COMP_EVR = 'CMD_SVC_EVR_CMD_COMPLETED_SUCCESS'
     CMD_DISPATCHED_EVR = ''  # TODO: set this
     CMD_COUNTER_EHA = 'CMD-0002'
-    CMD_DOWN_DP = 'DWN_MANAGE_PB,DATA_PRODUCTS,ENABLE'
 else:
     print(f'Error: Unrecognized hostname: {hostname}')
     sys.exit(1)

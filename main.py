@@ -37,14 +37,9 @@ def print_env_variables():
         'ING_VENUE_DIR',
         'ING_MTAK_DIR',
         'ING_LOG_DIR',
-        'CUSTOM_SCRIPT_BASE_DIR',
         'LAD_HOST',
         'LAD_PORT',
         'LAD_HTTPS',
-        'BUS_1553_LOGFILE_PATH',
-        'LOGFILE_1553_DICTIONARY_FILE_PATH',
-        'IRIG_SOURCE',
-        'CHILL_GDS',
         'PATH',
         'GDS_JAVA_OPTS'
     ]
@@ -73,16 +68,12 @@ import uvicorn
 from fastapi import FastAPI, APIRouter, HTTPException
 from fastapi.openapi.utils import get_openapi
 from fastapi.requests import Request
-from fastapi.responses import JSONResponse, FileResponse, Response
+from fastapi.responses import JSONResponse, Response
 # from core import core_util
-from core.core_utils import EVRType, ChannelType, AlarmTypeMap, DpStatus
 from core.schema import MtakStartBodyModel, FswCmdBodyModel, HwCmdBodyModel, \
     SseCmdBodyModel, BinaryFileBodyModel, ScmfFileBodyModel, \
-    EvrRtBodyModel, EvrRtMultiBodyModel, EvrChillBodyModel, EvrChillMultiBodyModel, EVRObjectResp, \
-    EhaRtBodyModel, EhaRtMultiBodyModel, EhaChillBodyModel, EhaChillMultiBodyModel, ChannelValueObjectRespModel, \
-    DpBodyModel, DataProductObjectRespModel, \
-    Parse1553BodyModel, Bus1553LogObject, \
-    ScriptStartBodyModel, ScriptStatusBodyModel, ScriptStatusResp, ScriptHaltBodyModel, ScriptRunInfo, \
+    EvrRtMultiBodyModel, EhaRtMultiBodyModel, EVRObjectResp, \
+    ChannelValueObjectRespModel, \
     HealthStatus, HealthStatusEnum, \
     MtakStartResponse, ErrorResponse, \
     CmdDispatchedResp, TimeType
@@ -121,8 +112,7 @@ def health() -> HealthStatus:
                     responses={
                         200: {'model': MtakStartResponse},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Start MTAK on the venue GDS host for the specified AMPCS session ids',
                     tags=['MTAK']
@@ -149,8 +139,7 @@ def start_mtak(body: MtakStartBodyModel, response: Response):
                     status_code=204,
                     responses={
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Shutdown MTAK that was started by VenueServer',
                     tags=['MTAK']
@@ -170,8 +159,7 @@ def shutdown_mtak(response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Send a FSW command via MTAK',
                     tags=['COMMAND']
@@ -198,8 +186,7 @@ def fsw_cmd(body: FswCmdBodyModel, response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Send a HW command via MTAK',
                     tags=['COMMAND']
@@ -223,8 +210,7 @@ def hw_cmd(body: HwCmdBodyModel, response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Send a SSE command via MTAK',
                     description='Send a SSE (Simulation and Support Equipment) command via MTAK',
@@ -247,8 +233,7 @@ def sse_cmd(body: SseCmdBodyModel, response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Upload a file to flight computer via MTAK',
                     tags=['COMMAND']
@@ -277,8 +262,7 @@ def binary_file(body: BinaryFileBodyModel, response: Response):
                     responses={
                         200: {'model': CmdDispatchedResp},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Upload a SCMF file to flight',
                     tags=['COMMAND']    
@@ -302,37 +286,7 @@ def scmf_file(body: ScmfFileBodyModel, response: Response):
                     responses={
                         200: {'model': List[EVRObjectResp]},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Queries the real time EVR stream for the specified EVRs',
-                    description='Queries the AMPCS Global LAD and return an array of EVR objects',
-                    tags=['EVR']
-                )
-def evr_realtime(body: EvrRtBodyModel, response: Response):
-    try:
-        evr_dicts = venue_core.get_rt_evr(sessionId=body.sessionId,
-                                    evrName=body.evrName,
-                                    eventId=body.eventId,
-                                    evrLevel=body.evrLevel,
-                                    timeType=TimeType.ERT, # Use ERT for real time query
-                                    startTime=body.startTime,
-                                    endTime=body.endTime,
-                                    timeout=body.timeout)
-        return JSONResponse(status_code=200, content=evr_dicts)
-
-    except Exception as e:
-        msg = 'Failed to query realtime EVR'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-@prefix_router.get('/evr/realtime_multi',
-                    responses={
-                        200: {'model': List[EVRObjectResp]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                     summary='Queries the real time EVR stream for the specified EVRs. This supports querying multiple EVR names, etc.',
                     description='Queries the AMPCS Global LAD and return an array of EVR objects',
@@ -356,108 +310,11 @@ def evr_realtime_multi(body: EvrRtMultiBodyModel, response: Response):
         response.status_code = 400
         return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
 
-@prefix_router.get('/evr/chill',
-                    responses={
-                        200: {'model': List[EVRObjectResp]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Query EVRs using chill_get_evrs',
-                    description='Note that there is no guarantee that EVRs are sorted according to the time.',
-                    tags=['EVR']
-                )
-def evr_chill(body: EvrChillBodyModel, response: Response):
-    try:
-        evrTypes = []
-        for val in body.evrType:
-            evrTypes.append(EVRType[val])
-
-        return venue_core.get_chill_evr(sessionId=body.sessionId,
-                        evrTypes=evrTypes,
-                        evrName=body.evrName,
-                        eventId=body.eventId,
-                        evrLevel=body.evrLevel,
-                        evrModule=body.evrModule,
-                        timeType=body.timeType,
-                        startTime=body.startTime,
-                        endTime=body.endTime,
-                        timeout=body.timeout)
-
-    except Exception as e:
-        msg = 'Failed to query CHILL EVR'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-    
-@prefix_router.get('/evr/chill_multi',
-                    responses={
-                        200: {'model': List[EVRObjectResp]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Query EVRs using chill_get_evrs. This supports querying multiple EVR names, etc.',
-                    description='Note that there is no guarantee that EVRs are sorted according to the time.',
-                    tags=['EVR']
-                )
-def evr_chill_multi(body: EvrChillMultiBodyModel, response: Response):
-    try:
-        evrTypes = []
-        for val in body.evrType:
-            evrTypes.append(EVRType[val])
-
-        return venue_core.get_chill_evr_multi(sessionId=body.sessionId,
-                        evrTypes=evrTypes,
-                        evrNames=body.evrNames,
-                        eventIds=body.eventIds,
-                        evrLevels=body.evrLevels,
-                        evrModules=body.evrModules,
-                        timeType=body.timeType,
-                        startTime=body.startTime,
-                        endTime=body.endTime,
-                        timeout=body.timeout)
-
-    except Exception as e:
-        msg = 'Failed to query CHILL EVR'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-
 @prefix_router.get('/eha/realtime',
                     responses={
                         200: {'model': List[ChannelValueObjectRespModel]},
                         400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                   summary='Queries the real time telemetry stream for a given channel',
-                   description='Queries AMPCS Global LAD and return an array of EHA channel objects',
-                   tags=['EHA']
-                )
-def eha_realtime(body: EhaRtBodyModel, response: Response):
-    try:
-        eha_dicts = venue_core.get_rt_eha(sessionId=body.sessionId,
-                                    channelId=body.channelId,
-                                    timeType=TimeType.ERT, # TODO: placeholder for R3
-                                    startTime=body.startTime,
-                                    endTime=body.endTime,
-                                    timeout=body.timeout)
-        return JSONResponse(status_code=200, content=eha_dicts)
-
-    except Exception as e:
-        msg = 'Failed to query realtime EHA'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-@prefix_router.get('/eha/realtime_multi',
-                    responses={
-                        200: {'model': List[ChannelValueObjectRespModel]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
+                        401: {'model': ErrorResponse}
                     },
                    summary='Queries the real time telemetry stream for a given channel. This supports querying multiple channel ids, etc.',
                    description='Queries AMPCS Global LAD and return an array of EHA channel objects',
@@ -475,231 +332,6 @@ def eha_realtime_multi(body: EhaRtMultiBodyModel, response: Response):
 
     except Exception as e:
         msg = 'Failed to query realtime EHA'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-@prefix_router.get('/eha/chill',
-                    responses={
-                        200: {'model': List[ChannelValueObjectRespModel]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },                   
-                   summary='Queries channel values from CHILL database',
-                   description='Uses chill_get_chanvals and returns an array of EHA channel objects',
-                   tags=['EHA']
-                )
-def eha_chill(body: EhaChillBodyModel, response: Response):
-    try:
-        chanTypes = []
-        for val in body.channelTypes:
-            chanTypes.append(ChannelType[val])
-
-        alarmType = None
-        if body.inAlarm is not None:
-            alarmType = AlarmTypeMap[body.inAlarm.value]
-
-        return venue_core.get_chill_eha(sessionId=body.sessionId,
-                                    channelIds=body.channelIds,
-                                    channelTypes=chanTypes,
-                                    timeType=body.timeType,
-                                    startTime=body.startTime,
-                                    endTime=body.endTime,
-                                    inAlarmFilter=alarmType,
-                                    timeout=body.timeout)
-
-    except Exception as e:
-        msg = 'Failed to query CHILL EHA'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-@prefix_router.get('/eha/chill_multi',
-                    responses={
-                        200: {'model': List[ChannelValueObjectRespModel]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },                   
-                   summary='Queries channel values from CHILL database. This supports querying multiple channel ids, etc.',
-                   description='Uses chill_get_chanvals and returns an array of EHA channel objects',
-                   tags=['EHA']
-                )
-def eha_chill_multi(body: EhaChillMultiBodyModel, response: Response):
-    try:
-        chanTypes = []
-        for val in body.channelTypes:
-            chanTypes.append(ChannelType[val])
-
-        alarmType = None
-        if body.inAlarm is not None:
-            alarmType = AlarmTypeMap[body.inAlarm.value]
-
-        return venue_core.get_chill_eha_multi(sessionId=body.sessionId,
-                                    channelIds=body.channelIds,
-                                    channelTypes=chanTypes,
-                                    timeType=body.timeType,
-                                    startTime=body.startTime,
-                                    endTime=body.endTime,
-                                    inAlarmFilter=alarmType,
-                                    timeout=body.timeout)
-
-    except Exception as e:
-        msg = 'Failed to query CHILL EHA'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-    
-@prefix_router.get('/dp',
-                    responses={
-                        200: {'model': List[DataProductObjectRespModel]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Query data products meta data from CHILL database',
-                    tags=['DATA_PRODUCT']
-                )
-def dp_chill(body: DpBodyModel, response: Response):
-    try:
-        dpStatus = DpStatus.ALL
-        if body.dpStatus is not None and body.dpStatus != '':
-            dpStatus = DpStatus[body.dpStatus]
-
-        return venue_core.get_dp(sessionId=body.sessionId,
-                        dpStatus=dpStatus,
-                        apIds=body.apIds,
-                        timeType=body.timeType,
-                        startTime=body.startTime,
-                        endTime=body.endTime,
-                        timeout=body.timeout)
-
-    except Exception as e:
-        msg = 'Failed to query CHILL Data Products'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-    
-
-@prefix_router.get('/bus1553',
-                    responses={
-                        200: {'model': List[Bus1553LogObject]},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Parse Bus 1553 log files to query a variable defined in a Bus 1553 dictionary',
-                    description='variables is the name of a single variable, which is defined in a Bus 1553 dictionary.',
-                    tags=['BUS_1553']
-                )
-def decode_1553(body: Parse1553BodyModel, request: Request, response: Response):
-    try:
-        return venue_core.decode_1553(start_time= body.start_time,
-                              end_time=body.end_time,
-                              duration=body.duration,
-                              time_type=body.time_type,
-                              variables=body.variables,
-                              username=request.state.username)
-
-    except Exception as e:
-        msg = 'Failed to query 1553 Bus log'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-
-@prefix_router.post('/custom_script/start', 
-                    responses={
-                        200: {'model': ScriptRunInfo},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Start execution of a custom script',
-                    description='This will start the custom script and return. Use status endpoint to get its status.',
-                    tags=['SCRIPT']
-                )
-def script_start(body: ScriptStartBodyModel, request: Request, response: Response):
-    try:
-        username = request.state.username
-        logger.info(f'username: {username} script_start: {body}')
-        body.inputs['username'] = username
-        res_dict = venue_core.start_custom_script(script_path=body.scriptPath,
-                                      script_hash=body.scriptHash,
-                                      inputs=body.inputs,
-                                      outputs=body.outputs)
-        return JSONResponse(status_code=200, content=res_dict)  
-    except Exception as e:
-        msg = f'Failed to start a custom script: {body.scriptPath}'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-
-@prefix_router.get('/custom_script/status',
-                    responses={
-                        200: {'model': ScriptStatusResp},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Retrieve status information from currently executing script',
-                    tags=['SCRIPT']
-                )
-def script_status(body: ScriptStatusBodyModel, response: Response):
-    try:
-        res_dict = venue_core.get_custom_script_status(script_run_id=body.scriptRunId)
-        return JSONResponse(status_code=200, content=res_dict)
-
-    except Exception as e:
-        msg = f'Failed to get the status of custom script: {body.scriptRunId}'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-
-@prefix_router.post('/custom_script/halt',
-                    status_code=204,
-                    responses={
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Halt custom script specified',
-                    tags=['SCRIPT']    
-                )
-def script_halt(body: ScriptHaltBodyModel, response: Response):
-    try:
-        venue_core.halt_custom_script(script_run_id=body.scriptRunId)
-        return Response(status_code=204)
-    
-    except Exception as e:
-        msg = f'Failed to halt custom script: {body.scriptRunId}'
-        logging.exception(msg)
-        response.status_code = 400
-        return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
-
-
-@prefix_router.get('/custom_script/{script_run_id}/files',
-                    response_class=FileResponse,
-                    responses={
-                        200: {'content': {'application/gzip': {}}},
-                        400: {'model': ErrorResponse},
-                        401: {'model': ErrorResponse},
-                        403: {'model': ErrorResponse}
-                    },
-                    summary='Download the input, output, and log files of the custom script as tar.gz',
-                    tags=['SCRIPT']
-                )
-def script_file(script_run_id: str, response: Response):
-    try:
-        tar_gz_path = venue_core.get_custom_script_files(script_run_id=script_run_id)
-        filename = os.path.basename(tar_gz_path)
-        return FileResponse(tar_gz_path, media_type='application/gzip', filename=filename)
-
-    except Exception as e:
-        msg = f'Failed to get custom script files. script_run_id: {script_run_id}'
         logging.exception(msg)
         response.status_code = 400
         return ErrorResponse(message=f'{msg}. {traceback.format_exc()}')
@@ -738,13 +370,7 @@ async def check_jwt(request: Request, call_next):
             return JSONResponse(status_code=401, 
                 content={'message': f'Invalid API token. {traceback.format_exc()}'})
 
-        if utils.has_permission(jwt_decoded):
-            return await call_next(request)
-        else:
-            return JSONResponse(status_code=403, 
-                content={
-                    'message': f'Does not have the required permission. Need one of {utils.ACCEPTED_SCOPES}'
-                })
+        return await call_next(request)
 
 @app.middleware('http')
 async def log_request(request: Request, call_next):
@@ -783,7 +409,6 @@ async def log_request(request: Request, call_next):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    error_json_str = json.dumps(exc.json(indent=None))
     return JSONResponse(status_code=400, 
         content={'message': str(exc)})
 
@@ -801,23 +426,11 @@ tags_metadata = [
     },
     {
         'name': 'EVR',
-        'description': 'Query EVR telemetry'
+        'description': 'Query realtime EVR telemetry'
     },
     {
         'name': 'EHA',
-        'description': 'Query EHA telemetry'
-    },
-    {
-        'name': 'DATA_PRODUCT',
-        'description': 'Query data products'
-    },
-    {
-        'name': 'BUS_1553',
-        'description': 'Query 1553 bus logs'
-    },
-    {
-        'name': 'SCRIPT',
-        'description': 'Run custom scripts'
+        'description': 'Query realtime EHA telemetry'
     },
     {
         'name': 'HEALTH',

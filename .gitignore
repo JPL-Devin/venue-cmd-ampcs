@@ -1,0 +1,5 @@
+venv3/
+nginx.conf
+__pycache__/
+*.pyc
+.envrc
