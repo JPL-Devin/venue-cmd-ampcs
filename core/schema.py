@@ -1,17 +1,24 @@
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 from typing import List, Union
 from enum import Enum
 
 
-def _validate_exactly_one_session_or_datapath(cls, values: dict) -> dict:
-    """Ensure exactly one of sessionId or dataPath is provided."""
-    session_id = values.get('sessionId')
-    data_path = values.get('dataPath')
-    if session_id is None and data_path is None:
-        raise ValueError('Either sessionId or dataPath must be provided')
-    if session_id is not None and data_path is not None:
-        raise ValueError('Only one of sessionId or dataPath may be provided')
-    return values
+class _SessionOrDataPathBase(BaseModel):
+    """Mixin base that enforces exactly-one-of sessionId / dataPath.
+
+    Subclasses are expected to redeclare ``sessionId`` and ``dataPath`` to
+    customize descriptions and types.
+    """
+    sessionId: Union[int, None] = None
+    dataPath: Union[str, None] = None
+
+    @model_validator(mode='after')
+    def _validate_exactly_one(self):
+        if self.sessionId is None and self.dataPath is None:
+            raise ValueError('Either sessionId or dataPath must be provided')
+        if self.sessionId is not None and self.dataPath is not None:
+            raise ValueError('Only one of sessionId or dataPath may be provided')
+        return self
 
 class DefaultCmdString(str, Enum):
     A = 'A'
@@ -35,11 +42,9 @@ class DataPathMappingModel(BaseModel):
     sessionId: int = Field(description='The AMPCS session ID')
 
 
-class MtakSessionEntry(BaseModel):
+class MtakSessionEntry(_SessionOrDataPathBase):
     sessionId: Union[int, None] = Field(None, description='The AMPCS session ID')
     dataPath: Union[str, None] = Field(None, description='DataPath alias for an AMPCS session')
-
-    _validate_one = root_validator(allow_reuse=True)(_validate_exactly_one_session_or_datapath)
 
 
 class MtakStartBodyModel(BaseModel):
@@ -59,7 +64,7 @@ class StringSelection(str, Enum):
     B = 'B'
     AB = 'AB'
 
-class FswCmdBodyModel(BaseModel):
+class FswCmdBodyModel(_SessionOrDataPathBase):
     sessionId: Union[int, None] = Field(None, description='The AMPCS session to send the command through')
     dataPath: Union[str, None] = Field(None, description='DataPath alias for an AMPCS session')
     commandString: str = Field(description='The command string including the command stem and any arguments')
@@ -70,8 +75,6 @@ class FswCmdBodyModel(BaseModel):
         description='Which sides of flight computer the command is for')
     timeout: int = Field(10, ge=0, description='The timeout on the dispatch process in seconds')
 
-    _validate_one = root_validator(allow_reuse=True)(_validate_exactly_one_session_or_datapath)
-
 class CmdDispatchedResp(BaseModel):
     cmdRequested: str = Field('', 
         description='This mirrors what was received as the requested command string')
@@ -79,7 +82,7 @@ class CmdDispatchedResp(BaseModel):
     dispatchTime: str = Field('', 
         description='Time that the dispatch occurred. Example: 2017-09-25T03:57:42.676Z') 
 
-class HwCmdBodyModel(BaseModel):
+class HwCmdBodyModel(_SessionOrDataPathBase):
     sessionId: Union[int, None] = Field(None, description='The AMPCS session to send this file through')
     dataPath: Union[str, None] = Field(None, description='DataPath alias for an AMPCS session')
     commandStem: str = Field(description='The command stem of the HW Command')
@@ -88,17 +91,13 @@ class HwCmdBodyModel(BaseModel):
     timeout: int = Field(10, ge=0, 
         description='The timeout on the dispatch process in seconds')
 
-    _validate_one = root_validator(allow_reuse=True)(_validate_exactly_one_session_or_datapath)
-
-class SseCmdBodyModel(BaseModel):
+class SseCmdBodyModel(_SessionOrDataPathBase):
     sessionId: Union[int, None] = Field(None, description='The AMPCS session to send the command through')
     dataPath: Union[str, None] = Field(None, description='DataPath alias for an AMPCS session')
     commandString: str = Field(description='The command string including the command stem and any arguments')
     timeout: int = Field(10, ge=0, description='The timeout on the dispatch process in seconds')
 
-    _validate_one = root_validator(allow_reuse=True)(_validate_exactly_one_session_or_datapath)
-
-class BinaryFileBodyModel(BaseModel):
+class BinaryFileBodyModel(_SessionOrDataPathBase):
     sessionId: Union[int, None] = Field(None, description='The AMPCS session to send the command through')
     dataPath: Union[str, None] = Field(None, description='DataPath alias for an AMPCS session')
     sourceFilePath: str = Field(description='The full path on GDS host (ex: /proj/europa/sit/current/files/myfile.data)')
@@ -110,18 +109,14 @@ class BinaryFileBodyModel(BaseModel):
     timeout: int = Field(10, ge=0, 
         description='The timeout on the dispatch process in seconds')
 
-    _validate_one = root_validator(allow_reuse=True)(_validate_exactly_one_session_or_datapath)
-
-class ScmfFileBodyModel(BaseModel):
+class ScmfFileBodyModel(_SessionOrDataPathBase):
     sessionId: Union[int, None] = Field(None, description='The AMPCS session to send the command through')
     dataPath: Union[str, None] = Field(None, description='DataPath alias for an AMPCS session')
     filePath: str = Field(description='The full path on GDS host (ex: /proj/europa/sit/current/files/myfile.scmf)')
     disableChecks: bool = Field(False, description='Disables the check done by AMPCS for invalid scmf file')
     timeout: int = Field(10, ge=0, description='The timeout on the dispatch process in seconds')
 
-    _validate_one = root_validator(allow_reuse=True)(_validate_exactly_one_session_or_datapath)
-
-class EvrRtMultiBodyModel(BaseModel):
+class EvrRtMultiBodyModel(_SessionOrDataPathBase):
     sessionId: Union[int, None] = Field(None, description='The AMPCS session to qury against')
     dataPath: Union[str, None] = Field(None, description='DataPath alias for an AMPCS session')
     # wild card works
@@ -134,8 +129,6 @@ class EvrRtMultiBodyModel(BaseModel):
     startTime: str = Field(description='Query start time in ERT DOY UTC (2009-202T12:35:00)')
     endTime: str = Field(description='Query end time in ERT DOY UTC (2009-202T12:35:00)')
     timeout: int = Field(240, ge=0, description='How long to wait in seconds for results to return')
-
-    _validate_one = root_validator(allow_reuse=True)(_validate_exactly_one_session_or_datapath)
 
 class TimeType(str, Enum):
     ERT = 'ERT'
@@ -172,7 +165,7 @@ class ChannelValueObjectRespModel(BaseModel):
     dnAlarmState: str = Field('', description='Indicates if the channel measurement is in alarm (on DN values)')
     euAlarmState: str = Field('', description='Indicates if the channel measurement is in alarm (on EU values)')
 
-class EhaRtMultiBodyModel(BaseModel):
+class EhaRtMultiBodyModel(_SessionOrDataPathBase):
     sessionId: Union[int, None] = Field(None, description='The AMPCS session to query against')
     dataPath: Union[str, None] = Field(None, description='DataPath alias for an AMPCS session')
     channelIds: List[str] = Field(description='The channel IDs to search for')
@@ -181,5 +174,3 @@ class EhaRtMultiBodyModel(BaseModel):
     # endTime is required
     endTime: str = Field(description='Query end time in ERT DOY UTC (2009-202T12:35:00)')
     timeout: int = Field(240, ge=0, description='How long to wait in seconds for results to return')
-
-    _validate_one = root_validator(allow_reuse=True)(_validate_exactly_one_session_or_datapath)
